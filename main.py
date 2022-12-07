@@ -1,5 +1,6 @@
 # Import the required libraries
 from tkinter import *
+from tkinter.ttk import *
 from tkinter import filedialog
 from PIL import ImageTk, Image
 
@@ -11,6 +12,11 @@ class GUI:
         filein = (open("C:\\Users\\brink\\PycharmProjects\\DavisPi\\backgroundconf.txt", "r"))
         self.imagefilename = filein.readline()
         filein.close()
+
+        # Open file and read sensor poll list
+        filein = (open("C:\\Users\\brink\\PycharmProjects\\DavisPi\\sensorpollconf.txt", "r"))
+        data = filein.read()
+        self.sensorpollinfo = data.split(",")
 
         # Create an instance of Tkinter Frame
         self.win = Tk()
@@ -67,6 +73,12 @@ class GUI:
             command=self.ChangeBackground
         )
 
+        # Add a menu item to the menu
+        self.settings_menu.add_command(
+            label='Change Sensors to Poll',
+            command=self.ChangeSensors
+        )
+
         # Add the settings menu to the menubar
         self.menubar.add_cascade(
             label="Settings",
@@ -100,7 +112,41 @@ class GUI:
         self.image2 = ImageTk.PhotoImage(self.resized)
         self.canvas.create_image(0, 0, image=self.image2, anchor='nw')
 
+    def ChangeSensors(self):
+        templist = []
+        changesensorwin = Toplevel(self.win)
+        changesensorwin.title("Select Sensor Data to Display")
+        changesensorwin.geometry('700x300')
+
+        def get_selection():
+            if (selcurintemp.get() == 1):
+                templist.append('curintemp')
+            if (selcurinhum.get() == 1):
+                templist.append('curinhum')
+
+        def save():
+            self.sensorpollinfo = []
+            for i in templist:
+                if i not in self.sensorpollinfo:
+                    self.sensorpollinfo.append(i)
+            fileout = open("C:\\Users\\brink\\PycharmProjects\\DavisPi\\sensorpollconf.txt", "w")
+            fileout.write(",".join(self.sensorpollinfo))
+            fileout.close()
+
+            changesensorwin.destroy()
+
+        selcurintemp = IntVar()
+        selcurinhum = IntVar()
+        c1 = Checkbutton(changesensorwin, text='Current Indoor Temp', variable=selcurintemp, onvalue=1, offvalue=0, command=get_selection)
+        c1.pack()
+        c2 = Checkbutton(changesensorwin, text='Current Indoor Humidity', variable=selcurinhum, onvalue=1, offvalue=0, command=get_selection)
+        c2.pack()
+        saveandexit_button = Button(changesensorwin, text="Save", command=save)
+        saveandexit_button.pack(pady=20)
+
+
 # Insert Update Events Here
+
     def resize_image(self,e):
         # open image to resize it
         self.image = Image.open(self.imagefilename)
