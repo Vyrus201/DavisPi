@@ -116,13 +116,41 @@ class GUI:
         templist = []
         changesensorwin = Toplevel(self.win)
         changesensorwin.title("Select Sensor Data to Display")
-        changesensorwin.geometry('700x300')
+        changesensorwin.geometry('475x300')
 
         def get_selection():
             if (selcurintemp.get() == 1):
                 templist.append('curintemp')
             if (selcurinhum.get() == 1):
                 templist.append('curinhum')
+            if (selcurouttemp.get() == 1):
+                templist.append('curouttemp')
+            if (selcurwinspeed.get() == 1):
+                templist.append('curwinspeed')
+            if (selcurwindir.get() == 1):
+                templist.append('curwindir')
+            if (selcurouthum.get() == 1):
+                templist.append('curouthum')
+            if (selcurdailrain.get() == 1):
+                templist.append('curdailrain')
+            if (selcurraterain.get() == 1):
+                templist.append('curraterain')
+
+            if (selhiwinspeed.get() == 1):
+                templist.append('hiwinspeed')
+            if (selhiintemp.get() == 1):
+                templist.append('hiintemp')
+            if (sellointemp.get() == 1):
+                templist.append('lointemp')
+            if (selhiinhum.get() == 1):
+                templist.append('hiinhum')
+            if (selloinhum.get() == 1):
+                templist.append('loinhum')
+            if (selhiouttemp.get() == 1):
+                templist.append('hiouttemp')
+            if (selloouttemp.get() == 1):
+                templist.append('loouttemp')
+
 
         def save():
             self.sensorpollinfo = []
@@ -137,12 +165,59 @@ class GUI:
 
         selcurintemp = IntVar()
         selcurinhum = IntVar()
+        selcurouttemp = IntVar()
+        selcurwinspeed = IntVar()
+        selcurwindir = IntVar()
+        selcurouthum = IntVar()
+        selcurdailrain = IntVar()
+        selcurraterain = IntVar()
+
+        selhiwinspeed = IntVar()
+        selhiintemp = IntVar()
+        sellointemp = IntVar()
+        selhiinhum = IntVar()
+        selloinhum = IntVar()
+        selhiouttemp = IntVar()
+        selloouttemp = IntVar()
+
+        l1 = Label(changesensorwin, text='Current Sensor Values')
+        l1.grid(row=1, column=1, sticky='W', ipady=5)
         c1 = Checkbutton(changesensorwin, text='Current Indoor Temp', variable=selcurintemp, onvalue=1, offvalue=0, command=get_selection)
-        c1.pack()
+        c1.grid(row=2, column=1, ipadx=50, ipady=5, sticky='W')
         c2 = Checkbutton(changesensorwin, text='Current Indoor Humidity', variable=selcurinhum, onvalue=1, offvalue=0, command=get_selection)
-        c2.pack()
+        c2.grid(row=3, column=1, ipadx=50, ipady=5, sticky='W')
+        c3 = Checkbutton(changesensorwin, text='Current Outdoor Temp', variable=selcurouttemp, onvalue=1, offvalue=0, command=get_selection)
+        c3.grid(row=4, column=1, ipadx=50, ipady=5, sticky='W')
+        c4 = Checkbutton(changesensorwin, text='Current Wind Speed', variable=selcurwinspeed, onvalue=1, offvalue=0, command=get_selection)
+        c4.grid(row=5, column=1, ipadx=50, ipady=5, sticky='W')
+        c5 = Checkbutton(changesensorwin, text='Current Wind Direction', variable=selcurwindir, onvalue=1, offvalue=0, command=get_selection)
+        c5.grid(row=6, column=1, ipadx=50, ipady=5, sticky='W')
+        c6 = Checkbutton(changesensorwin, text='Current Outdoor Humidity', variable=selcurouthum, onvalue=1, offvalue=0, command=get_selection)
+        c6.grid(row=7, column=1, ipadx=50, ipady=5, sticky='W')
+        c7 = Checkbutton(changesensorwin, text='Current Daily Rain', variable=selcurdailrain, onvalue=1, offvalue=0, command=get_selection)
+        c7.grid(row=8, column=1, ipadx=50, ipady=5, sticky='W')
+        c8 = Checkbutton(changesensorwin, text='Current Rain Rate', variable=selcurraterain, onvalue=1, offvalue=0, command=get_selection)
+        c8.grid(row=9, column=1, ipadx=50, ipady=5, sticky='W')
+
+        l1 = Label(changesensorwin, text='High/Low Sensor Values')
+        l1.grid(row=1, column=2, sticky='W', ipady=5)
+        c9 = Checkbutton(changesensorwin, text='Daily Peak Wind Speed', variable=selhiwinspeed, onvalue=1, offvalue=0, command=get_selection)
+        c9.grid(row=2, column=2, ipadx=50, ipady=5, sticky='W')
+        c10 = Checkbutton(changesensorwin, text='High Indoor Daily Temp', variable=selhiintemp, onvalue=1, offvalue=0, command=get_selection)
+        c10.grid(row=3, column=2, ipadx=50, ipady=5, sticky='W')
+        c11 = Checkbutton(changesensorwin, text='Low Indoor Daily Temp', variable=sellointemp, onvalue=1, offvalue=0, command=get_selection)
+        c11.grid(row=4, column=2, ipadx=50, ipady=5, sticky='W')
+        c12 = Checkbutton(changesensorwin, text='High Indoor Daily Humidity', variable=selhiinhum, onvalue=1, offvalue=0, command=get_selection)
+        c12.grid(row=5, column=2, ipadx=50, ipady=5, sticky='W')
+        c13 = Checkbutton(changesensorwin, text='Low Indoor Daily Humidity', variable=selloinhum, onvalue=1, offvalue=0, command=get_selection)
+        c13.grid(row=6, column=2, ipadx=50, ipady=5, sticky='W')
+        c14 = Checkbutton(changesensorwin, text='High Outdoor Daily Temperature', variable=selhiouttemp, onvalue=1, offvalue=0, command=get_selection)
+        c14.grid(row=7, column=2, ipadx=50, ipady=5, sticky='W')
+        c15 = Checkbutton(changesensorwin, text='Low Outdoor Daily Temperature', variable=selloouttemp, onvalue=1, offvalue=0, command=get_selection)
+        c15.grid(row=8, column=2, ipadx=50, ipady=5, sticky='W')
+
         saveandexit_button = Button(changesensorwin, text="Save", command=save)
-        saveandexit_button.pack(pady=20)
+        saveandexit_button.grid(row=10, column=1, columnspan=2)
 
 
 # Insert Update Events Here
