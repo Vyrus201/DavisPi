@@ -9,6 +9,24 @@ import serialcompi
 
 # Create Class Instance
 GetCurData = serialcompi.CurData()
+
+# Call each class function to set each class function
+curintemp = GetCurData.getcurintemp()
+curinhum = GetCurData.getcurinhum()
+curouttemp = GetCurData.getcurouttemp()
+curwinspeed = GetCurData.getcurwinspeed()
+curwindir = GetCurData.getcurwindir()
+curouthum = GetCurData.getcurouthum()
+curdailrain = GetCurData.getcurdailrain()
+curraterain = GetCurData.getcurraterain()
+hiwinspeed = GetCurData.gethiwinspeed()
+hiintemp = GetCurData.gethiintemp()
+lointemp = GetCurData.getlointemp()
+hiinhum = GetCurData.gethiinhum()
+loinhum = GetCurData.getloinhum()
+hiouttemp = GetCurData.gethiouttemp()
+loouttemp = GetCurData.getloouttemp()
+
 # Destroy Class Instance - Run destructor and print all data objects
 del GetCurData
 
@@ -122,7 +140,7 @@ class GUI:
         templist = []
         changesensorwin = Toplevel(self.win)
         changesensorwin.title("Select Sensor Data to Display")
-        changesensorwin.geometry('475x300')
+        changesensorwin.geometry('475x325')
 
         def get_selection():
             if (selcurintemp.get() == 1):
