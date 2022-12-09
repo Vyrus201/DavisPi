@@ -25,6 +25,94 @@ class CurData:
         ser.write(str.encode("HILOWS\n"))
         self.hexData1 = bytes.hex(ser.read(437))
 
+        # Get current indoor temp
+        self.curintemp = self.read2byte(20)
+        self.curintemp = self.curintemp[:-1] + '.' + self.curintemp[-1:]
+
+        # Get current indoor humidity
+        self.curinhum = self.read1byte(24)
+
+        # Get current outdoor temp
+        self.curouttemp = self.read2byte(26)
+        self.curouttemp = self.curouttemp[:-1] + '.' + self.curouttemp[-1:]
+
+        # Get current wind speed
+        self.curwinspeed = self.read1byte(30)
+
+        # Get current wind direction
+        self.curwindir = self.read2byte(34)
+        if self.curwindir >= 11 and self.curwindir < 34:
+            self.curwindir = 'NNE'
+        elif self.curwindir >= 34 and self.curwindir < 56:
+            self.curwindir = 'NE'
+        elif self.curwindir >= 56 and self.curwindir < 79:
+            self.curwindir = 'ENE'
+        elif self.curwindir >= 79 and self.curwindir < 101:
+            self.curwindir = 'E'
+        elif self.curwindir >= 101 and self.curwindir < 124:
+            self.curwindir = 'ESE'
+        elif self.curwindir >= 126 and self.curwindir < 146:
+            self.curwindir = 'SE'
+        elif self.curwindir >= 146 and self.curwindir < 169:
+            self.curwindir = 'SSE'
+        elif self.curwindir >= 169 and self.curwindir < 191:
+            self.curwindir = 'S'
+        elif self.curwindir >= 191 and self.curwindir < 214:
+            self.curwindir = 'SSW'
+        elif self.curwindir >= 214 and self.curwindir < 236:
+            self.curwindir = 'SW'
+        elif self.curwindir >= 236 and self.curwindir < 259:
+            self.curwindir = 'WSW'
+        elif self.curwindir >= 259 and self.curwindir < 281:
+            self.curwindir = 'W'
+        elif self.curwindir >= 281 and self.curwindir < 304:
+            self.curwindir = 'WNW'
+        elif self.curwindir >= 304 and self.curwindir < 326:
+            self.curwindir = 'NW'
+        elif self.curwindir >= 326 and self.curwindir < 349:
+            self.curwindir = 'NNW'
+        elif self.curwindir >= 349 and self.curwindir <= 360:
+            self.curwindir = 'N'
+        elif self.curwindir >= 1 and self.curwindir < 11:
+            self.curwindir = 'N'
+
+        # Get outside humidity
+        self.curouthum = self.read1byte(68)
+
+        # Get daily rain
+        self.curdailrain = self.read2byte(102)
+        self.curdailrain = str(int(self.curdailrain / 100))
+
+        # Get rain rate
+        self.curraterain = self.read2byte(84)
+        self.curraterain = str(int(self.curraterain / 100))
+
+        # Get high daily wind speed
+        self.hiwinspeed = self.read1byte1(34)
+
+        # Get high daily indoor temp
+        self.hiintemp = self.read2byte1(44)
+        self.hiintemp = self.hiintemp[:-1] + '.' + self.hiintemp[-1:]
+
+        # Get low daily indoor temp
+        self.lointemp = self.read2byte1(48)
+        self.lointemp = self.lointemp[:-1] + '.' + self.lointemp[-1:]
+
+        # Get high daily indoor humidity
+        self.hiinhum = self.read1byte1(76)
+
+        # Get low daily indoor humidity
+        self.loinhum = self.read1byte1(78)
+
+        # Get high daily outdoor temperature
+        self.hiouttemp = self.read2byte1(100)
+        self.hiouttemp = self.hiouttemp[:-1] + '.' + self.hiouttemp[-1:]
+
+        # Get low daily outdoor temperature
+        self.loouttemp = self.read2byte1(96)
+        self.loouttemp = self.loouttemp[:-1] + '.' + self.loouttemp[-1:]
+        return self.loouttemp
+
     def read2byte(self, dataindex):
         curvalhi = self.hexData[dataindex+2:dataindex+4]
         curvallo = self.hexData[dataindex:dataindex+2]
@@ -49,121 +137,64 @@ class CurData:
         curval = str(int(curval, 16))
         return curval
 
-    # Get current indoor temp
+    # Return current indoor temp
     def getcurintemp(self):
-        self.curintemp = self.read2byte(20)
-        self.curintemp = self.curintemp[:-1] + '.' + self.curintemp[-1:]
         return self.curintemp
 
-    # Get current indoor humidity
+    # Return current indoor humidity
     def getcurinhum(self):
-        self.curinhum = self.read1byte(24)
         return self.curinhum
 
-    # Get current outdoor temp
+    # Return current outdoor temp
     def getouttemp(self):
-        self.curouttemp = self.read2byte(26)
-        self.curouttemp = self.curouttemp[:-1] + '.' + self.curouttemp[-1:]
         return self.curouttemp
 
-    # Get current wind speed
+    # Return current wind speed
     def getcurwinspeed(self):
-        self.curwinspeed = self.read1byte(30)
         return self.curwinspeed
 
-    # Get current wind direction
+    # Return current wind direction
     def getcurwindir(self):
-        self.curwindir = self.read2byte(34)
-        if self.curwindir >= 11 and self.curwindir < 34:
-            self.curwindir = 'NNE'
-        elif self.curwindir >= 34 and self.curwindir < 56:
-            self.curwindir = 'NE'
-        elif self.curwindir >= 56 and self.curwindir < 79:
-            self.curwindir = 'ENE'
-        elif self.curwindir >= 79 and self.curwindir < 101:
-            self.curwindir = 'E'
-        elif self.curwindir >= 101 and self.curwindir < 124:
-            self.curwindir = 'ESE'
-        elif self.curwindir >=126 and self.curwindir < 146:
-            self.curwindir = 'SE'
-        elif self.curwindir >= 146 and self.curwindir < 169:
-            self.curwindir = 'SSE'
-        elif self.curwindir >= 169 and self.curwindir < 191:
-            self.curwindir = 'S'
-        elif self.curwindir >= 191 and self.curwindir < 214:
-            self.curwindir = 'SSW'
-        elif self.curwindir >= 214 and self.curwindir < 236:
-            self.curwindir = 'SW'
-        elif self.curwindir >= 236 and self.curwindir < 259:
-            self.curwindir = 'WSW'
-        elif self.curwindir >= 259 and self.curwindir < 281:
-            self.curwindir = 'W'
-        elif self.curwindir >= 281 and self.curwindir < 304:
-            self.curwindir = 'WNW'
-        elif self.curwindir >= 304 and self.curwindir < 326:
-            self.curwindir = 'NW'
-        elif self.curwindir >= 326 and self.curwindir < 349:
-            self.curwindir = 'NNW'
-        elif self.curwindir >= 349 and self.curwindir <= 360:
-            self.curwindir = 'N'
-        elif self.curwindir >=1 and self.curwindir < 11:
-            self.curwindir = 'N'
         return self.curwindir
 
-    # Get outside humidity
+    # Return outside humidity
     def getcurouthum(self):
-        self.curouthum = self.read1byte(68)
         return self.curouthum
 
-    # Get daily rain
+    # Return daily rain
     def getcurdailrain(self):
-        self.curdailrain = self.read2byte(102)
-        self.curdailrain = str(int(self.curdailrain / 100))
         return self.curdailrain
 
-    # Get rain rate
+    # Return rain rate
     def getcurraterain(self):
-        self.curraterain = self.read2byte(84)
-        self.curraterain = str(int(self.curraterain / 100))
         return self.curraterain
 
-    # Get high daily wind speed
+    # Return high daily wind speed
     def gethiwinspeed(self):
-        self.hiwinspeed = self.read1byte1(34)
         return self.hiwinspeed
 
-    # Get high daily indoor temp
+    # Return high daily indoor temp
     def gethiintemp(self):
-        self.hiintemp = self.read2byte1(44)
-        self.hiintemp = self.hiintemp[:-1] + '.' + self.hiintemp[-1:]
         return self.hiintemp
 
-    # Get low daily indoor temp
+    # Return low daily indoor temp
     def getlointemp(self):
-        self.lointemp = self.read2byte1(48)
-        self.lointemp = self.lointemp[:-1] + '.' + self.lointemp[-1:]
         return self.lointemp
 
-    # Get high daily indoor humidity
+    # Return high daily indoor humidity
     def gethiinhum(self):
-        self.hiinhum = self.read1byte1(76)
         return self.hiinhum
 
-    # Get low daily indoor humidity
+    # Return low daily indoor humidity
     def getloinhum(self):
-        self.loinhum = self.read1byte1(78)
         return self.loinhum
 
-    # Get high daily outdoor temperature
+    # Return high daily outdoor temperature
     def gethiouttemp(self):
-        self.hiouttemp = self.read2byte1(100)
-        self.hiouttemp = self.hiouttemp[:-1] + '.' + self.hiouttemp[-1:]
         return self.hiouttemp
 
-    # Get low daily outdoor temperature
+    # Return low daily outdoor temperature
     def getloouttemp(self):
-        self.loouttemp = self.read2byte1(96)
-        self.loouttemp = self.loouttemp[:-1] + '.' + self.loouttemp[-1:]
         return self.loouttemp
 
 
