@@ -3,8 +3,14 @@ from tkinter import *
 from tkinter.ttk import *
 from tkinter import filedialog
 from PIL import ImageTk, Image
+import serialcompi
 
 # ToDo: Attempt to save/read file path from ini or some other file format. Maybe XML??
+
+# Create Class Instance
+GetCurData = serialcompi.CurData()
+# Destroy Class Instance - Run destructor and print all data objects
+del GetCurData
 
 class GUI:
     def __init__(self):
