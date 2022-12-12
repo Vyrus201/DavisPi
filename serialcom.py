@@ -1,15 +1,21 @@
+# Import necessary libraries
 import serial
 import subprocess
 
-class CurData:
-    def __init__(self):
-        sub = "ttyUSB"
 
+class SerData:
+
+    # On creating class instance, connect to station and poll station for current data/highs & lows
+    def __init__(self):
+
+        # Determine which USB port the station is connected to
+        sub = "ttyUSB"
         usbout = subprocess.Popen("dmesg | grep 'cp210x converter now attached'", stdout=subprocess.PIPE, shell=True)
         temp = str(usbout.stdout.read())
         index = temp.rindex(sub)
         sliced = temp[index:index + 7]
 
+        # Connect to serial interface over the specified USB port
         ser = serial.Serial(
             port=(f'/dev/{sliced}'),
             baudrate=19200,
@@ -19,9 +25,11 @@ class CurData:
             timeout=None,
         )
 
+        # Poll station for current data, save results in hexData
         ser.write(str.encode("LPS2 1\n"))
         self.hexData = bytes.hex(ser.read(100))
 
+        # Poll station for highs & lows, save results in hexData1
         ser.write(str.encode("HILOWS\n"))
         self.hexData1 = bytes.hex(ser.read(437))
 
@@ -111,8 +119,8 @@ class CurData:
         # Get low daily outdoor temperature
         self.loouttemp = self.read2byte1(96)
         self.loouttemp = self.loouttemp[:-1] + '.' + self.loouttemp[-1:]
-        return self.loouttemp
 
+    # Converts a 2 byte sized data block into decimal format (for current data)
     def read2byte(self, dataindex):
         curvalhi = self.hexData[dataindex+2:dataindex+4]
         curvallo = self.hexData[dataindex:dataindex+2]
@@ -120,11 +128,13 @@ class CurData:
         curval = str(int(curval, 16))
         return curval
 
+    # Converts a 1 byte sized data block into decimal format (for current data)
     def read1byte(self, dataindex):
         curval = self.hexData[dataindex:dataindex+2]
         curval = str(int(curval, 16))
         return curval
 
+    # Converts a 2 byte sized data block into decimal format (for highs & lows)
     def read2byte1(self, dataindex):
         curvalhi = self.hexData1[dataindex+2:dataindex+4]
         curvallo = self.hexData1[dataindex:dataindex+2]
@@ -132,6 +142,7 @@ class CurData:
         curval = str(int(curval, 16))
         return curval
 
+    # Converts a 1 byte sized data block into decimal format (for highs & lows)
     def read1byte1(self, dataindex):
         curval = self.hexData1[dataindex:dataindex+2]
         curval = str(int(curval, 16))
@@ -197,7 +208,8 @@ class CurData:
     def getloouttemp(self):
         return self.loouttemp
 
-
+    # Upon deletion of the class instance, print all data values. In actual deployment this should not exist. This is
+    # useful for debugging, however. Shows that all values are being calculated properly
     def __del__(self):
         print(f'The highest wind speed today is: {self.hiwinspeed} MPH')
         print(f'The highest indoor temperature today is: {self.hiintemp}\u00b0F')
