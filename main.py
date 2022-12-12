@@ -15,8 +15,14 @@ import serialcompi
 # Destroy Class Instance - Run destructor and print all data objects
 #del GetCurData
 
+
+
 class GUI:
     def __init__(self):
+
+        # Destroy splashscreen
+        splash_root.destroy()
+
         # Open file and read background path
         with open("C:\\Users\\brink\\PycharmProjects\\DavisPi\\backgroundconf.json", "r") as read_file:
             self.imagefilename = json.load(read_file)
@@ -279,6 +285,38 @@ class GUI:
         # Add menubar
         self.win.config(menu=self.menubar)
 
-# Create instance of GUI and loop
-Window = GUI()
-Window.win.mainloop()
+# Create splash screen
+splash_root = Tk()
+
+# Clear title bar
+splash_root.overrideredirect(1)
+
+# Set screen geometry values to be 1/4 of the screen width
+screen_width = int(splash_root.winfo_screenwidth() / 4)
+screen_height = screen_width
+
+# Find the center of the screen, then adjust for the size of the window. Used to create the window in the exact center of the screen
+screen_centerx = int((splash_root.winfo_screenwidth() / 2) - screen_width / 2)
+screen_centery = int((splash_root.winfo_screenheight() / 2) - screen_height / 2)
+
+# Change size of window to previously calculated values, and at previously calculated position
+splash_root.geometry(f'{screen_width}x{screen_height}+{screen_centerx}+{screen_centery}')
+
+# Grab splashscreen image file and resize
+image = Image.open("C:\\Users\\brink\\PycharmProjects\\DavisPi\\logo.png")
+resized = image.resize((screen_width, screen_height))
+image2 = ImageTk.PhotoImage(resized)
+
+# Create canvas
+canvas = Canvas(splash_root, width=400, height=400)
+canvas.pack(fill=BOTH, expand=True)
+
+# Add image to canvas
+canvas.create_image(0,0, image=image2, anchor='nw')
+
+# After x amount of milliseconds, create instance of GUI class (which destroys splashscreen)
+splash_root.after(3500, GUI)
+
+# Loop
+mainloop()
+
