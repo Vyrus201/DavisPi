@@ -3,48 +3,32 @@ from tkinter import *
 from tkinter.ttk import *
 from tkinter import filedialog
 from PIL import ImageTk, Image
+import datetime
+import json
 import serialcompi
 
-# ToDo: Attempt to save/read file path from ini or some other file format. Maybe XML??
+# ToDo: If background file is not found, need to add code to default to a different background file, otherwise the GUI window won't launch
 
 # Create Class Instance
-GetCurData = serialcompi.CurData()
-
-# Call each class function to set each class function
-curintemp = GetCurData.getcurintemp()
-curinhum = GetCurData.getcurinhum()
-curouttemp = GetCurData.getcurouttemp()
-curwinspeed = GetCurData.getcurwinspeed()
-curwindir = GetCurData.getcurwindir()
-curouthum = GetCurData.getcurouthum()
-curdailrain = GetCurData.getcurdailrain()
-curraterain = GetCurData.getcurraterain()
-hiwinspeed = GetCurData.gethiwinspeed()
-hiintemp = GetCurData.gethiintemp()
-lointemp = GetCurData.getlointemp()
-hiinhum = GetCurData.gethiinhum()
-loinhum = GetCurData.getloinhum()
-hiouttemp = GetCurData.gethiouttemp()
-loouttemp = GetCurData.getloouttemp()
+#GetCurData = serialcompi.SerData()
 
 # Destroy Class Instance - Run destructor and print all data objects
-del GetCurData
+#del GetCurData
 
 class GUI:
     def __init__(self):
         # Open file and read background path
-        filein = (open("C:\\Users\\brink\\PycharmProjects\\DavisPi\\backgroundconf.txt", "r"))
-        self.imagefilename = filein.readline()
-        filein.close()
+        with open("C:\\Users\\brink\\PycharmProjects\\DavisPi\\backgroundconf.json", "r") as read_file:
+            self.imagefilename = json.load(read_file)
 
         # Open file and read sensor poll list
-        filein = (open("C:\\Users\\brink\\PycharmProjects\\DavisPi\\sensorpollconf.txt", "r"))
-        data = filein.read()
-        self.sensorpollinfo = data.split(",")
+        with open("C:\\Users\\brink\\PycharmProjects\\DavisPi\\sensorpollconf.json", "r") as read_file:
+            self.sensorpollinfo = json.load(read_file)
 
         # Create an instance of Tkinter Frame
         self.win = Tk()
-        self.win.title("Weather Station")
+        self.win.iconbitmap('icon.ico')
+        self.win.title("WXtreme - Davis Vantage Pro 2")
 
         # Grab current screen resolution and set it as the window size
         self.screen_width = self.win.winfo_screenwidth()
@@ -56,9 +40,11 @@ class GUI:
             self.image = Image.open(self.imagefilename)
             self.resized = self.image.resize((self.screen_width, self.screen_height))
             self.image2 = ImageTk.PhotoImage(self.resized)
+
+        # If file not found, add error message to error log
         except FileNotFoundError:
-            fileout = open("C:\\Users\\brink\\PycharmProjects\\DavisPi\\ErrorLog.txt", "w")
-            fileout.write(f'Unable to open the following file path: {self.imagefilename}')
+            fileout = open("C:\\Users\\brink\\PycharmProjects\\DavisPi\\ErrorLog.txt", "a")
+            fileout.write(f'{datetime.datetime.now()}: Unable to open the following file path: {self.imagefilename}\n')
             fileout.close()
             exit()
 
@@ -118,30 +104,45 @@ class GUI:
 
 
 # Insert Menu Buttons here
+
+    # Exit
     def ExitProgram(self):
         exit()
 
+    # Prompt for new background
     def ChangeBackground(self):
+
+        # Open file explorer
         tempimagefilename = filedialog.askopenfilename(initialdir="C:\\Users\\brink\\Pictures", title="Select a File", filetypes=(("Image Files", "*.jpg *.png *.gif"), ("all files", "*.*")))
+
         # If an image was not selected, don't update the file name
         if not tempimagefilename:
             return
         else:
             self.imagefilename = tempimagefilename
-        fileout = open("C:\\Users\\brink\\PycharmProjects\\DavisPi\\backgroundconf.txt", "w")
-        fileout.write(self.imagefilename)
-        fileout.close()
+
+        # Save image path to file for reference later
+        with open("C:\\Users\\brink\\PycharmProjects\\DavisPi\\backgroundconf.json", "w") as write_file:
+            json.dump(self.imagefilename, write_file)
+
+        # Set new image as background
         self.image = Image.open(self.imagefilename)
         self.resized = self.image.resize((self.screen_width, self.screen_height))
         self.image2 = ImageTk.PhotoImage(self.resized)
         self.canvas.create_image(0, 0, image=self.image2, anchor='nw')
 
+    # Open prompt to request new sensors to poll
     def ChangeSensors(self):
+
+        # Initialize list
         templist = []
+
+        # Open new window
         changesensorwin = Toplevel(self.win)
         changesensorwin.title("Select Sensor Data to Display")
         changesensorwin.geometry('475x325')
 
+        # Update list with each selection
         def get_selection():
             if (selcurintemp.get() == 1):
                 templist.append('curintemp')
@@ -175,18 +176,25 @@ class GUI:
             if (selloouttemp.get() == 1):
                 templist.append('loouttemp')
 
-
+        # Save selections to file
         def save():
+
+            # Clear list
             self.sensorpollinfo = []
+
+            # Clear out any repeated selections
             for i in templist:
                 if i not in self.sensorpollinfo:
                     self.sensorpollinfo.append(i)
-            fileout = open("C:\\Users\\brink\\PycharmProjects\\DavisPi\\sensorpollconf.txt", "w")
-            fileout.write(",".join(self.sensorpollinfo))
-            fileout.close()
 
+            # Save to file
+            with open ("C:\\Users\\brink\\PycharmProjects\\DavisPi\\sensorpollconf.json", "w") as write_file:
+                json.dump(self.sensorpollinfo, write_file)
+
+            # Close window
             changesensorwin.destroy()
 
+        # Initialize each variable
         selcurintemp = IntVar()
         selcurinhum = IntVar()
         selcurouttemp = IntVar()
@@ -204,6 +212,7 @@ class GUI:
         selhiouttemp = IntVar()
         selloouttemp = IntVar()
 
+        # Create check boxes
         l1 = Label(changesensorwin, text='Current Sensor Values')
         l1.grid(row=1, column=1, sticky='W', ipady=5)
         c1 = Checkbutton(changesensorwin, text='Current Indoor Temp', variable=selcurintemp, onvalue=1, offvalue=0, command=get_selection)
@@ -247,24 +256,29 @@ class GUI:
 # Insert Update Events Here
 
     def resize_image(self,e):
+
         # open image to resize it
         self.image = Image.open(self.imagefilename)
+
         # resize the image with width and height of root
         self.resized = self.image.resize((e.width, e.height))
         self.image2 = ImageTk.PhotoImage(self.resized)
         self.canvas.create_image(0, 0, image=self.image2, anchor='nw')
 
     def enableFullscreen(self,e):
+
         self.win.attributes('-fullscreen', True)
+
         # Get rid of menubar
         self.win.config(menu="")
 
     def disableFullscreen(self,e):
+
         self.win.attributes('-fullscreen', False)
+
         # Add menubar
         self.win.config(menu=self.menubar)
 
-
-
+# Create instance of GUI and loop
 Window = GUI()
 Window.win.mainloop()
