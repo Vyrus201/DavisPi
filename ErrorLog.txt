@@ -1,0 +1,4 @@
+2022-12-10 21:36:37.306082: Unable to open the following file path: C:/Users/brink/Pictures/backgroun.jpg
+2022-12-10 21:36:45.773534: Unable to open the following file path: C:/Users/brink/Pictures/backgroun.jpg
+2022-12-10 21:42:14.070474: Unable to gracefully close connection to FTP server "ftp.9and10news.com". FTP connection will now close forcefully.
+2022-12-10 21:42:29.868229: Unable to gracefully close connection to FTP server "ftp.9and10news.com". FTP connection will now close forcefully.
