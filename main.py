@@ -1,19 +1,44 @@
 # Import the required libraries
 from tkinter import *
 from tkinter.ttk import *
+#import ttkbootstrap as ttkb
+from ttkbootstrap.constants import *
 from tkinter import filedialog
 from PIL import ImageTk, Image
 import datetime
 import json
+import os
 import serialcompi
-
-# ToDo: If background file is not found, need to add code to default to a different background file, otherwise the GUI window won't launch
+import pyautogui
 
 # Create Class Instance
-#GetCurData = serialcompi.SerData()
+GetCurData = serialcompi.SerData()
+
+# Sync Time
+#GetCurData.updateTime()
 
 # Destroy Class Instance - Run destructor and print all data objects
-#del GetCurData
+del GetCurData
+
+# Get current directory
+workingdir = os.getcwd()
+
+# Get current user home directory
+home_directory = os.path.expanduser( '~' )
+
+class makeDraggable:
+    def add_draggable_widget(self, widget):
+        self.widget = widget
+        self.root = widget.winfo_toplevel()
+        self.widget.bind("B1-Motion", self.on_drag)
+        self.widget.bind("<ButtonRelease>", self.on_drop)
+        self.widget.configure(cursor="hand1")
+
+    def on_drag(self, event):
+        self.widget.place(x=self.root.winfo.pointerx()-self.root.winfo_rootx(), y=self.root.winfo_pointery()-self.root.winfo_rooty())
+
+    def on_drop(self, event):
+        self.widget.place(x=self.root.winfo_pointerx(), y=self.root.winfo_pointery())
 
 
 
@@ -24,22 +49,24 @@ class GUI:
         splash_root.destroy()
 
         # Open file and read background path
-        with open("C:\\Users\\brink\\PycharmProjects\\DavisPi\\backgroundconf.json", "r") as read_file:
+        with open(f'{workingdir}\\Assets\\backgroundconf.json', "r") as read_file:
             self.imagefilename = json.load(read_file)
 
         # Open file and read sensor poll list
-        with open("C:\\Users\\brink\\PycharmProjects\\DavisPi\\sensorpollconf.json", "r") as read_file:
+        with open(f'{workingdir}\\Assets\\sensorpollconf.json', "r") as read_file:
             self.sensorpollinfo = json.load(read_file)
 
         # Create an instance of Tkinter Frame
         self.win = Tk()
-        self.win.iconbitmap('icon.ico')
-        self.win.title("WXtreme - Davis Vantage Pro 2")
 
         # Grab current screen resolution and set it as the window size
         self.screen_width = self.win.winfo_screenwidth()
         self.screen_height = self.win.winfo_screenheight()
-        self.win.geometry(f'{self.screen_width}x{self.screen_height}')
+        self.win.geometry(f'{self.screen_width}x{self.screen_height}+0+0')
+
+        # Change window settings
+        self.win.iconbitmap(f'{workingdir}\\Assets\\icon.ico')
+        self.win.title("WXtreme - Davis Vantage Pro 2")
 
         # Open the Image File
         try:
@@ -49,17 +76,21 @@ class GUI:
 
         # If file not found, add error message to error log
         except FileNotFoundError:
-            fileout = open("C:\\Users\\brink\\PycharmProjects\\DavisPi\\ErrorLog.txt", "a")
+            fileout = open(f'{workingdir}\\ErrorLog.txt', "a")
             fileout.write(f'{datetime.datetime.now()}: Unable to open the following file path: {self.imagefilename}\n')
             fileout.close()
-            exit()
+            self.imagefilename = f'{workingdir}\\Assets\\defaultbackground.png'
+            self.image = Image.open(self.imagefilename)
+            self.resized = self.image.resize((self.screen_width, self.screen_height))
+            self.image2 = ImageTk.PhotoImage(self.resized)
+            #exit()
 
         # Create a Canvas
         self.canvas = Canvas(self.win, width=800, height=600)
         self.canvas.pack(fill=BOTH, expand=True)
 
         # Add Image inside the Canvas
-        self.canvas.create_image(0, 0, image=self.image2, anchor='nw')
+        self.image_id = self.canvas.create_image(0, 0, image=self.image2, anchor='nw')
 
         # Create menubar
         self.menubar = Menu(self.win)
@@ -105,8 +136,11 @@ class GUI:
         self.win.bind("<F11>", self.enableFullscreen)
         self.win.bind("<Escape>", self.disableFullscreen)
         self.win.bind("<Configure>", self.resize_image)
+        self.canvas.bind("<Button-1>", self.nearest_item_with_tag)
+        self.canvas.bind("<ButtonRelease-1>", self.clear_bind)
 
-
+        # Call initial function to display sensor data. This function will auto-loop itself
+        self.displaySensorData()
 
 
 # Insert Menu Buttons here
@@ -119,7 +153,7 @@ class GUI:
     def ChangeBackground(self):
 
         # Open file explorer
-        tempimagefilename = filedialog.askopenfilename(initialdir="C:\\Users\\brink\\Pictures", title="Select a File", filetypes=(("Image Files", "*.jpg *.png *.gif"), ("all files", "*.*")))
+        tempimagefilename = filedialog.askopenfilename(initialdir=f'{home_directory}\\Pictures', title="Select a File", filetypes=(("Image Files", "*.jpg *.png *.gif"), ("all files", "*.*")))
 
         # If an image was not selected, don't update the file name
         if not tempimagefilename:
@@ -128,14 +162,14 @@ class GUI:
             self.imagefilename = tempimagefilename
 
         # Save image path to file for reference later
-        with open("C:\\Users\\brink\\PycharmProjects\\DavisPi\\backgroundconf.json", "w") as write_file:
+        with open(f'{workingdir}\\Assets\\backgroundconf.json', "w") as write_file:
             json.dump(self.imagefilename, write_file)
 
         # Set new image as background
         self.image = Image.open(self.imagefilename)
         self.resized = self.image.resize((self.screen_width, self.screen_height))
         self.image2 = ImageTk.PhotoImage(self.resized)
-        self.canvas.create_image(0, 0, image=self.image2, anchor='nw')
+        self.canvas.itemconfig(self.image_id, image=self.image2)
 
     # Open prompt to request new sensors to poll
     def ChangeSensors(self):
@@ -145,8 +179,9 @@ class GUI:
 
         # Open new window
         changesensorwin = Toplevel(self.win)
+        changesensorwin.iconbitmap(f'{workingdir}\\Assets\\icon.ico')
         changesensorwin.title("Select Sensor Data to Display")
-        changesensorwin.geometry('475x325')
+        changesensorwin.geometry('475x285')
 
         # Update list with each selection
         def get_selection():
@@ -194,7 +229,7 @@ class GUI:
                     self.sensorpollinfo.append(i)
 
             # Save to file
-            with open ("C:\\Users\\brink\\PycharmProjects\\DavisPi\\sensorpollconf.json", "w") as write_file:
+            with open (f'{workingdir}\\Assets\\sensorpollconf.json', "w") as write_file:
                 json.dump(self.sensorpollinfo, write_file)
 
             # Close window
@@ -219,44 +254,50 @@ class GUI:
         selloouttemp = IntVar()
 
         # Create check boxes
-        l1 = Label(changesensorwin, text='Current Sensor Values')
-        l1.grid(row=1, column=1, sticky='W', ipady=5)
-        c1 = Checkbutton(changesensorwin, text='Current Indoor Temp', variable=selcurintemp, onvalue=1, offvalue=0, command=get_selection)
-        c1.grid(row=2, column=1, ipadx=50, ipady=5, sticky='W')
-        c2 = Checkbutton(changesensorwin, text='Current Indoor Humidity', variable=selcurinhum, onvalue=1, offvalue=0, command=get_selection)
-        c2.grid(row=3, column=1, ipadx=50, ipady=5, sticky='W')
-        c3 = Checkbutton(changesensorwin, text='Current Outdoor Temp', variable=selcurouttemp, onvalue=1, offvalue=0, command=get_selection)
-        c3.grid(row=4, column=1, ipadx=50, ipady=5, sticky='W')
-        c4 = Checkbutton(changesensorwin, text='Current Wind Speed', variable=selcurwinspeed, onvalue=1, offvalue=0, command=get_selection)
-        c4.grid(row=5, column=1, ipadx=50, ipady=5, sticky='W')
-        c5 = Checkbutton(changesensorwin, text='Current Wind Direction', variable=selcurwindir, onvalue=1, offvalue=0, command=get_selection)
-        c5.grid(row=6, column=1, ipadx=50, ipady=5, sticky='W')
-        c6 = Checkbutton(changesensorwin, text='Current Outdoor Humidity', variable=selcurouthum, onvalue=1, offvalue=0, command=get_selection)
-        c6.grid(row=7, column=1, ipadx=50, ipady=5, sticky='W')
-        c7 = Checkbutton(changesensorwin, text='Current Daily Rain', variable=selcurdailrain, onvalue=1, offvalue=0, command=get_selection)
-        c7.grid(row=8, column=1, ipadx=50, ipady=5, sticky='W')
-        c8 = Checkbutton(changesensorwin, text='Current Rain Rate', variable=selcurraterain, onvalue=1, offvalue=0, command=get_selection)
-        c8.grid(row=9, column=1, ipadx=50, ipady=5, sticky='W')
+        l0 = Label(changesensorwin, text='')
+        l0.grid(row=1, column=0, sticky='W', ipady=5, ipadx=5)
+        l1 = Labelframe(changesensorwin, text='Current Sensor Values')
+        l1.grid(row=1, column=1, sticky='W', ipady=5, ipadx=5)
+        c1 = Checkbutton(l1, text='Current Indoor Temp', variable=selcurintemp, onvalue=1, offvalue=0, command=get_selection)
+        c1.grid(row=2, column=1, ipadx=5, ipady=5, sticky='W')
+        c2 = Checkbutton(l1, text='Current Indoor Humidity', variable=selcurinhum, onvalue=1, offvalue=0, command=get_selection)
+        c2.grid(row=3, column=1, ipadx=5, ipady=5, sticky='W')
+        c3 = Checkbutton(l1, text='Current Outdoor Temp', variable=selcurouttemp, onvalue=1, offvalue=0, command=get_selection)
+        c3.grid(row=4, column=1, ipadx=5, ipady=5, sticky='W')
+        c4 = Checkbutton(l1, text='Current Wind Speed', variable=selcurwinspeed, onvalue=1, offvalue=0, command=get_selection)
+        c4.grid(row=5, column=1, ipadx=5, ipady=5, sticky='W')
+        c5 = Checkbutton(l1, text='Current Wind Direction', variable=selcurwindir, onvalue=1, offvalue=0, command=get_selection)
+        c5.grid(row=6, column=1, ipadx=5, ipady=5, sticky='W')
+        c6 = Checkbutton(l1, text='Current Outdoor Humidity', variable=selcurouthum, onvalue=1, offvalue=0, command=get_selection)
+        c6.grid(row=7, column=1, ipadx=5, ipady=5, sticky='W')
+        c7 = Checkbutton(l1, text='Current Daily Rain', variable=selcurdailrain, onvalue=1, offvalue=0, command=get_selection)
+        c7.grid(row=8, column=1, ipadx=5, ipady=5, sticky='W')
+        c8 = Checkbutton(l1, text='Current Rain Rate', variable=selcurraterain, onvalue=1, offvalue=0, command=get_selection)
+        c8.grid(row=9, column=1, ipadx=5, ipady=5, sticky='W')
 
-        l1 = Label(changesensorwin, text='High/Low Sensor Values')
-        l1.grid(row=1, column=2, sticky='W', ipady=5)
-        c9 = Checkbutton(changesensorwin, text='Daily Peak Wind Speed', variable=selhiwinspeed, onvalue=1, offvalue=0, command=get_selection)
-        c9.grid(row=2, column=2, ipadx=50, ipady=5, sticky='W')
-        c10 = Checkbutton(changesensorwin, text='High Indoor Daily Temp', variable=selhiintemp, onvalue=1, offvalue=0, command=get_selection)
-        c10.grid(row=3, column=2, ipadx=50, ipady=5, sticky='W')
-        c11 = Checkbutton(changesensorwin, text='Low Indoor Daily Temp', variable=sellointemp, onvalue=1, offvalue=0, command=get_selection)
-        c11.grid(row=4, column=2, ipadx=50, ipady=5, sticky='W')
-        c12 = Checkbutton(changesensorwin, text='High Indoor Daily Humidity', variable=selhiinhum, onvalue=1, offvalue=0, command=get_selection)
-        c12.grid(row=5, column=2, ipadx=50, ipady=5, sticky='W')
-        c13 = Checkbutton(changesensorwin, text='Low Indoor Daily Humidity', variable=selloinhum, onvalue=1, offvalue=0, command=get_selection)
-        c13.grid(row=6, column=2, ipadx=50, ipady=5, sticky='W')
-        c14 = Checkbutton(changesensorwin, text='High Outdoor Daily Temperature', variable=selhiouttemp, onvalue=1, offvalue=0, command=get_selection)
-        c14.grid(row=7, column=2, ipadx=50, ipady=5, sticky='W')
-        c15 = Checkbutton(changesensorwin, text='Low Outdoor Daily Temperature', variable=selloouttemp, onvalue=1, offvalue=0, command=get_selection)
-        c15.grid(row=8, column=2, ipadx=50, ipady=5, sticky='W')
+        l2 = Labelframe(changesensorwin, text='High/Low Sensor Values')
+        l2.grid(row=1, column=3, sticky='W', ipady=5, ipadx=5)
+        c9 = Checkbutton(l2, text='Daily Peak Wind Speed', variable=selhiwinspeed, onvalue=1, offvalue=0, command=get_selection)
+        c9.grid(row=2, column=3, ipadx=5, ipady=5, sticky='W')
+        c10 = Checkbutton(l2, text='High Indoor Daily Temp', variable=selhiintemp, onvalue=1, offvalue=0, command=get_selection)
+        c10.grid(row=3, column=3, ipadx=5, ipady=5, sticky='W')
+        c11 = Checkbutton(l2, text='Low Indoor Daily Temp', variable=sellointemp, onvalue=1, offvalue=0, command=get_selection)
+        c11.grid(row=4, column=3, ipadx=5, ipady=5, sticky='W')
+        c12 = Checkbutton(l2, text='High Indoor Daily Humidity', variable=selhiinhum, onvalue=1, offvalue=0, command=get_selection)
+        c12.grid(row=5, column=3, ipadx=5, ipady=5, sticky='W')
+        c13 = Checkbutton(l2, text='Low Indoor Daily Humidity', variable=selloinhum, onvalue=1, offvalue=0, command=get_selection)
+        c13.grid(row=6, column=3, ipadx=5, ipady=5, sticky='W')
+        c14 = Checkbutton(l2, text='High Outdoor Daily Temperature', variable=selhiouttemp, onvalue=1, offvalue=0, command=get_selection)
+        c14.grid(row=7, column=3, ipadx=5, ipady=5, sticky='W')
+        c15 = Checkbutton(l2, text='Low Outdoor Daily Temperature', variable=selloouttemp, onvalue=1, offvalue=0, command=get_selection)
+        c15.grid(row=8, column=3, ipadx=5, ipady=5, sticky='W')
+        l16 = Label(l2, text='')
+        l16.grid(row=9, column=3, ipadx=5, ipady=5, sticky='W')
 
+        spacer = Label(changesensorwin, text="")
+        spacer.grid(row=10, column=2)
         saveandexit_button = Button(changesensorwin, text="Save", command=save)
-        saveandexit_button.grid(row=10, column=1, columnspan=2)
+        saveandexit_button.grid(row=11, column=2, columnspan=1)
 
 
 # Insert Update Events Here
@@ -269,7 +310,7 @@ class GUI:
         # resize the image with width and height of root
         self.resized = self.image.resize((e.width, e.height))
         self.image2 = ImageTk.PhotoImage(self.resized)
-        self.canvas.create_image(0, 0, image=self.image2, anchor='nw')
+        self.canvas.itemconfig(self.image_id, image=self.image2)
 
     def enableFullscreen(self,e):
 
@@ -284,6 +325,34 @@ class GUI:
 
         # Add menubar
         self.win.config(menu=self.menubar)
+
+    def displaySensorData(self):
+        # In here, CREATE each text display
+        self.text1 = self.canvas.create_text(50, 50, text="test123", tags="text1")
+        self.text2 = self.canvas.create_text(150, 150, text="testagain", tags="text2")
+        self.win.after(5000, self.updateSensorData)
+
+    def updateSensorData(self):
+        # In here, UPDATE each text display
+        self.canvas.itemconfigure(self.text1, text='test12345')
+        self.win.after(5000, self.updateSensorData)
+
+    def clear_bind(self, event):
+        self.canvas.unbind("<B1-Motion>")
+
+    def nearest_item_with_tag(self, event):
+        res = self.canvas.find_closest(event.x, event.y, halo=0)
+        if res[0] == 1:
+            return
+        cmd = lambda x: self.relocate(res[0])
+        self.canvas.bind("<B1-Motion>", cmd)
+
+    def relocate (self, id):
+        x0, y0 = self.canvas.winfo_pointerxy()
+        x0 -= self.canvas.winfo_rootx()
+        y0 -= self.canvas.winfo_rooty()
+
+        self.canvas.coords(id, x0, y0,)
 
 # Create splash screen
 splash_root = Tk()
@@ -303,7 +372,7 @@ screen_centery = int((splash_root.winfo_screenheight() / 2) - screen_height / 2)
 splash_root.geometry(f'{screen_width}x{screen_height}+{screen_centerx}+{screen_centery}')
 
 # Grab splashscreen image file and resize
-image = Image.open("C:\\Users\\brink\\PycharmProjects\\DavisPi\\logo.png")
+image = Image.open(f'{workingdir}\\Assets\\logo.png')
 resized = image.resize((screen_width, screen_height))
 image2 = ImageTk.PhotoImage(resized)
 
@@ -315,8 +384,7 @@ canvas.pack(fill=BOTH, expand=True)
 canvas.create_image(0,0, image=image2, anchor='nw')
 
 # After x amount of milliseconds, create instance of GUI class (which destroys splashscreen)
-splash_root.after(3500, GUI)
+splash_root.after(30, GUI)
 
-# Loop
+
 mainloop()
-
