@@ -9,7 +9,6 @@ import datetime
 import json
 import os
 import serialcompi
-import pyautogui
 
 # Create Class Instance
 GetCurData = serialcompi.SerData()
@@ -18,29 +17,13 @@ GetCurData = serialcompi.SerData()
 #GetCurData.updateTime()
 
 # Destroy Class Instance - Run destructor and print all data objects
-del GetCurData
+#del GetCurData
 
 # Get current directory
 workingdir = os.getcwd()
 
 # Get current user home directory
 home_directory = os.path.expanduser( '~' )
-
-class makeDraggable:
-    def add_draggable_widget(self, widget):
-        self.widget = widget
-        self.root = widget.winfo_toplevel()
-        self.widget.bind("B1-Motion", self.on_drag)
-        self.widget.bind("<ButtonRelease>", self.on_drop)
-        self.widget.configure(cursor="hand1")
-
-    def on_drag(self, event):
-        self.widget.place(x=self.root.winfo.pointerx()-self.root.winfo_rootx(), y=self.root.winfo_pointery()-self.root.winfo_rooty())
-
-    def on_drop(self, event):
-        self.widget.place(x=self.root.winfo_pointerx(), y=self.root.winfo_pointery())
-
-
 
 class GUI:
     def __init__(self):
@@ -83,7 +66,6 @@ class GUI:
             self.image = Image.open(self.imagefilename)
             self.resized = self.image.resize((self.screen_width, self.screen_height))
             self.image2 = ImageTk.PhotoImage(self.resized)
-            #exit()
 
         # Create a Canvas
         self.canvas = Canvas(self.win, width=800, height=600)
@@ -328,18 +310,42 @@ class GUI:
 
     def displaySensorData(self):
         # In here, CREATE each text display
-        self.text1 = self.canvas.create_text(50, 50, text="test123", tags="text1")
-        self.text2 = self.canvas.create_text(150, 150, text="testagain", tags="text2")
-        self.win.after(5000, self.updateSensorData)
+
+        # Initialize Dictionary (Only way to create new canvas items in a loop, as seen below)
+        self.dataDisplay = {}
+
+        # Populate dictionary with sensor data
+        dataDict = GetCurData.getData()
+
+        # Iterate through dictionary. If the sensor data was selected in dataDict, then create a canvas item
+        i = 0
+        for key, value in dataDict.items():
+            if key in self.sensorpollinfo:
+                self.dataDisplay[key] = self.canvas.create_text(50+i, 50, text=value, tags="text1")
+                i = i + 50
+
+        # After 1 second, update sensors
+        self.win.after(1000, self.updateSensorData)
 
     def updateSensorData(self):
         # In here, UPDATE each text display
-        self.canvas.itemconfigure(self.text1, text='test12345')
-        self.win.after(5000, self.updateSensorData)
 
+        # Populate dictionary with sensor data
+        dataDict = GetCurData.getData()
+
+        # Iterate through dictionary, updating each on-screen value
+        for key, value in dataDict.items():
+            if key in self.sensorpollinfo:
+                self.canvas.itemconfigure(self.dataDisplay[key], text=value)
+
+        # Update again after 1 second
+        self.win.after(1000, self.updateSensorData)
+
+    # Clear mouse bind to canvas item
     def clear_bind(self, event):
         self.canvas.unbind("<B1-Motion>")
 
+    # Find the nearest canvas item when mouse is clicked, bind that item to the mouse motion, making it draggable
     def nearest_item_with_tag(self, event):
         res = self.canvas.find_closest(event.x, event.y, halo=0)
         if res[0] == 1:
@@ -347,6 +353,7 @@ class GUI:
         cmd = lambda x: self.relocate(res[0])
         self.canvas.bind("<B1-Motion>", cmd)
 
+    # Use the mouse coordinates as the new location for the canvas item
     def relocate (self, id):
         x0, y0 = self.canvas.winfo_pointerxy()
         x0 -= self.canvas.winfo_rootx()
