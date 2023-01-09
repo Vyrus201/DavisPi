@@ -1,3 +1,5 @@
+# TODO: Determine which serial commands respond with <ACK> (0x06) and write code to WAIT for the ACK before reading data/continuing
+
 # Import necessary libraries
 import serial
 import subprocess
@@ -38,13 +40,18 @@ crcarray = arr.array('i', [0x0, 0x1021, 0x2042, 0x3063, 0x4084, 0x50a5, 0x60c6, 
 0x6e17, 0x7e36, 0x4e55, 0x5e74, 0x2e93, 0x3eb2, 0xed1, 0x1ef0])
 
 def calcCRC(data_bytes):
+
+    # Init
     crc = 0
+
+    # Iterate through array and calculate CRC
     for i in data_bytes:
         index = ((crc >> 8) ^ i)
         temp = crcarray[index]
         crc = (0x00FFFF & (crc << 8))
         crc = crc ^ temp
-        print(f'New CRC: {hex(crc)}')
+
+    # Return CRC value
     return(crc)
 
 class SerData:
@@ -53,15 +60,16 @@ class SerData:
     def __init__(self):
 
         # Determine which USB port the station is connected to
-        sub = "ttyUSB"
-        usbout = subprocess.Popen("dmesg | grep 'cp210x converter now attached'", stdout=subprocess.PIPE, shell=True)
-        temp = str(usbout.stdout.read())
-        index = temp.rindex(sub)
-        sliced = temp[index:index + 7]
+        #sub = "ttyUSB"
+        #usbout = subprocess.Popen("dmesg | grep 'cp210x converter now attached'", stdout=subprocess.PIPE, shell=True)
+        #temp = str(usbout.stdout.read())
+        #index = temp.rindex(sub)
+        #sliced = temp[index:index + 7]
 
         # Connect to serial interface over the specified USB port
         self.ser = serial.Serial(
-            port=(f'/dev/{self.sliced}'),
+            #port=(f'/dev/{sliced}'),
+            port='COM3',
             baudrate=19200,
             parity=serial.PARITY_NONE,
             stopbits=serial.STOPBITS_ONE,
@@ -69,30 +77,49 @@ class SerData:
             timeout=None,
         )
 
+    def getData(self):
+
+        self.sensorData = {'curintemp': 'NULL', 'curinhum': 'NULL', 'curouttemp': 'NULL', 'curwinspeed': 'NULL',
+                      'curwindir': 'NULL', 'curouthum': 'NULL', 'curdailrain': 'NULL', 'curraterain': 'NULL',
+                      'hiwinspeed': 'NULL', 'hiintemp': 'NULL', 'lointemp': 'NULL', 'hiinhum': 'NULL',
+                      'loinhum': 'NULL', 'hiouttemp': 'NULL', 'loouttemp': 'NULL'}
+
         # Poll station for current data, save results in hexData
+        self.ser.flushInput()
+        self.ser.flushOutput()
         self.ser.write(str.encode("LPS2 1\n"))
         self.hexData = bytes.hex(self.ser.read(100))
 
         # Poll station for highs & lows, save results in hexData1
+        self.ser.flushInput()
+        self.ser.flushOutput()
         self.ser.write(str.encode("HILOWS\n"))
         self.hexData1 = bytes.hex(self.ser.read(437))
 
         # Get current indoor temp
         self.curintemp = self.read2byte(20)
         self.curintemp = self.curintemp[:-1] + '.' + self.curintemp[-1:]
+        self.sensorData.update({'curintemp': self.curintemp})
 
         # Get current indoor humidity
         self.curinhum = self.read1byte(24)
+        self.sensorData.update({'curinhum': self.curinhum})
 
         # Get current outdoor temp
         self.curouttemp = self.read2byte(26)
         self.curouttemp = self.curouttemp[:-1] + '.' + self.curouttemp[-1:]
+        if self.curouttemp != '3276.7':
+            self.sensorData.update({'curouttemp': self.curouttemp})
 
         # Get current wind speed
         self.curwinspeed = self.read1byte(30)
+        if self.curwinspeed != '255':
+            self.sensorData.update({'curwinspeed': self.curwinspeed})
 
         # Get current wind direction
         self.curwindir = self.read2byte(34)
+        self.curwindir = int(self.curwindir)
+
         if self.curwindir >= 11 and self.curwindir < 34:
             self.curwindir = 'NNE'
         elif self.curwindir >= 34 and self.curwindir < 56:
@@ -128,41 +155,61 @@ class SerData:
         elif self.curwindir >= 1 and self.curwindir < 11:
             self.curwindir = 'N'
 
+        if self.curwindir != 32767:
+            self.sensorData.update({'curwindir': self.curwindir})
+
+
         # Get outside humidity
         self.curouthum = self.read1byte(68)
+        if self.curouthum != '255':
+            self.sensorData.update({'curouthum': self.curouthum})
 
         # Get daily rain
         self.curdailrain = self.read2byte(102)
-        self.curdailrain = str(int(self.curdailrain / 100))
+        self.curdailrain = str(int(self.curdailrain) / 100)
+        self.sensorData.update({'curdailrain': self.curdailrain})
 
         # Get rain rate
         self.curraterain = self.read2byte(84)
-        self.curraterain = str(int(self.curraterain / 100))
+        self.curraterain = str(int(self.curraterain) / 100)
+        if self.curraterain != '655.35':
+            self.sensorData.update({'curraterain': self.curraterain})
 
         # Get high daily wind speed
         self.hiwinspeed = self.read1byte1(34)
+        self.sensorData.update({'hiwinspeed': self.hiwinspeed})
 
         # Get high daily indoor temp
         self.hiintemp = self.read2byte1(44)
         self.hiintemp = self.hiintemp[:-1] + '.' + self.hiintemp[-1:]
+        self.sensorData.update({'hiintemp': self.hiintemp})
 
         # Get low daily indoor temp
         self.lointemp = self.read2byte1(48)
         self.lointemp = self.lointemp[:-1] + '.' + self.lointemp[-1:]
+        self.sensorData.update({'lointemp': self.lointemp})
 
         # Get high daily indoor humidity
         self.hiinhum = self.read1byte1(76)
+        self.sensorData.update({'hiinhum': self.hiinhum})
 
         # Get low daily indoor humidity
         self.loinhum = self.read1byte1(78)
+        self.sensorData.update({'loinhum': self.loinhum})
 
         # Get high daily outdoor temperature
         self.hiouttemp = self.read2byte1(100)
         self.hiouttemp = self.hiouttemp[:-1] + '.' + self.hiouttemp[-1:]
+        if self.hiouttemp != '3276.8':
+            self.sensorData.update({'hiouttemp': self.hiouttemp})
 
         # Get low daily outdoor temperature
         self.loouttemp = self.read2byte1(96)
         self.loouttemp = self.loouttemp[:-1] + '.' + self.loouttemp[-1:]
+        if self.loouttemp != '3276.7':
+            self.sensorData.update({'loouttemp': self.loouttemp})
+
+        return(self.sensorData)
 
     # Converts a 2 byte sized data block into decimal format (for current data)
     def read2byte(self, dataindex):
@@ -192,65 +239,6 @@ class SerData:
         curval = str(int(curval, 16))
         return curval
 
-    # Return current indoor temp
-    def getcurintemp(self):
-        return self.curintemp
-
-    # Return current indoor humidity
-    def getcurinhum(self):
-        return self.curinhum
-
-    # Return current outdoor temp
-    def getouttemp(self):
-        return self.curouttemp
-
-    # Return current wind speed
-    def getcurwinspeed(self):
-        return self.curwinspeed
-
-    # Return current wind direction
-    def getcurwindir(self):
-        return self.curwindir
-
-    # Return outside humidity
-    def getcurouthum(self):
-        return self.curouthum
-
-    # Return daily rain
-    def getcurdailrain(self):
-        return self.curdailrain
-
-    # Return rain rate
-    def getcurraterain(self):
-        return self.curraterain
-
-    # Return high daily wind speed
-    def gethiwinspeed(self):
-        return self.hiwinspeed
-
-    # Return high daily indoor temp
-    def gethiintemp(self):
-        return self.hiintemp
-
-    # Return low daily indoor temp
-    def getlointemp(self):
-        return self.lointemp
-
-    # Return high daily indoor humidity
-    def gethiinhum(self):
-        return self.hiinhum
-
-    # Return low daily indoor humidity
-    def getloinhum(self):
-        return self.loinhum
-
-    # Return high daily outdoor temperature
-    def gethiouttemp(self):
-        return self.hiouttemp
-
-    # Return low daily outdoor temperature
-    def getloouttemp(self):
-        return self.loouttemp
 
     # Upon deletion of the class instance, print all data values. In actual deployment this should not exist. This is
     # useful for debugging, however. Shows that all values are being calculated properly
@@ -278,6 +266,7 @@ class SerData:
         # Initialize Array
         data_bytes = arr.array("i")
 
+        # Grab individual time pieces
         system_time_year = datetime.datetime.today().year
         system_time_year = (system_time_year - 1900)
         system_time_month = datetime.datetime.today().month
@@ -286,6 +275,7 @@ class SerData:
         system_time_minute = datetime.datetime.today().minute
         system_time_second = datetime.datetime.today().second
 
+        # Insert into array
         data_bytes.insert(0, system_time_second)
         data_bytes.insert(1, system_time_minute)
         data_bytes.insert(2, system_time_hour)
@@ -293,30 +283,32 @@ class SerData:
         data_bytes.insert(4, system_time_month)
         data_bytes.insert(5, system_time_year)
 
+        print(data_bytes)
+
+        # Example data provided by Davis. Used for testing
         # data_bytes.insert(0, 0xc6)
         # data_bytes.insert(1, 0xce)
         # data_bytes.insert(2, 0xa2)
         # data_bytes.insert(3, 0x03)
 
+        # Calculate CRC
         crc_bytes = calcCRC(data_bytes)
 
+        # Order CRC into high and low values
         hi = crc_bytes >> 8
         lo = crc_bytes & 0xff
 
+        # Place CRC bytes into array
         data_bytes.insert(6, hi)
         data_bytes.insert(7, lo)
 
+        # Place array items into string
         string = ''
-
         for i in data_bytes:
             string = string + str(i)
 
         # Send time
+        self.ser.flushInput()
+        self.ser.flushOutput()
         self.ser.write(str.encode("SETTIME\n"))
         self.ser.write(str.encode(string))
-
-
-
-
-
-
