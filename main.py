@@ -14,7 +14,7 @@ import serialcompi
 GetCurData = serialcompi.SerData()
 
 # Sync Time
-#GetCurData.updateTime()
+GetCurData.updateTime()
 
 # Destroy Class Instance - Run destructor and print all data objects
 #del GetCurData
@@ -108,11 +108,18 @@ class GUI:
             command=self.ChangeSensors
         )
 
+        # Add a menu item to the menu
+        self.settings_menu.add_command(
+            label='Save Screen Configuration',
+            command=self.saveOnScreenLocation
+        )
+
         # Add the settings menu to the menubar
         self.menubar.add_cascade(
             label="Settings",
             menu=self.settings_menu
         )
+
 
         # Event Binds
         self.win.bind("<F11>", self.enableFullscreen)
@@ -120,6 +127,8 @@ class GUI:
         self.win.bind("<Configure>", self.resize_image)
         self.canvas.bind("<Button-1>", self.nearest_item_with_tag)
         self.canvas.bind("<ButtonRelease-1>", self.clear_bind)
+        self.canvas.bind("<Button-2>", self.right_click)
+        self.canvas.bind("<Button-3>", self.right_click)
 
         # Call initial function to display sensor data. This function will auto-loop itself
         self.displaySensorData()
@@ -130,6 +139,17 @@ class GUI:
     # Exit
     def ExitProgram(self):
         exit()
+
+    # Save each object location to text file
+    def saveOnScreenLocation(self):
+        # Iterate through dictionary, getting the coordinates of each item
+        for key in self.sensorpollinfo:
+            templist = self.canvas.coords(self.dataDisplay[key])
+            x, y = [templist[i] for i in (0, 1)]
+            self.sensorpollinfo.update({key: [x, y, 'Arial', 12]})
+
+            with open (f'{workingdir}\\Assets\\sensorpollconf.json', "w") as write_file:
+                json.dump(self.sensorpollinfo, write_file)
 
     # Prompt for new background
     def ChangeBackground(self):
@@ -203,12 +223,12 @@ class GUI:
         def save():
 
             # Clear list
-            self.sensorpollinfo = []
+            self.sensorpollinfo = {}
 
             # Clear out any repeated selections
             for i in templist:
                 if i not in self.sensorpollinfo:
-                    self.sensorpollinfo.append(i)
+                    self.sensorpollinfo.update({i: [50, 50, 'Arial', 12]})
 
             # Save to file
             with open (f'{workingdir}\\Assets\\sensorpollconf.json', "w") as write_file:
@@ -216,6 +236,8 @@ class GUI:
 
             # Close window
             changesensorwin.destroy()
+
+            self.displaySensorData()
 
         # Initialize each variable
         selcurintemp = IntVar()
@@ -294,6 +316,89 @@ class GUI:
         self.image2 = ImageTk.PhotoImage(self.resized)
         self.canvas.itemconfig(self.image_id, image=self.image2)
 
+    def right_click(self, event):
+
+        # Set default return value. Will change if the user changes the selection, but sets the variable if the user
+        # doesn't select something
+        self.retfont = "Arial"
+        self.retsize = "12"
+
+        def savefont():
+
+            with open(f'{workingdir}\\Assets\\sensorpollconf.json', "r") as read_file:
+                self.sensorpollinfo = json.load(read_file)
+
+            for key, value in self.sensorpollinfo.items():
+                filex, filey, filefont, filesize = [value[i] for i in (0, 1, 2, 3)]
+                if filex == self.objectx and filey == self.objecty:
+                    templist = [filex, filey, self.retfont, self.retsize]
+                    self.sensorpollinfo.update({key: templist})
+
+            with open (f'{workingdir}\\Assets\\sensorpollconf.json', "w") as write_file:
+                json.dump(self.sensorpollinfo, write_file)
+
+            changefontwin.destroy()
+
+            self.displaySensorData()
+
+
+
+
+        res = self.canvas.find_closest(event.x, event.y, halo=0)
+        if res[0] == 1:
+            return
+        templist = self.canvas.coords(res[0])
+        self.objectx, self.objecty = [templist[i] for i in (0, 1)]
+
+
+        sizeoptions = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25,
+                       26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48,
+                       49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71,
+                       72, 73, 74, 75
+                      ]
+
+        fontoptions = ['Arial', 'Helvetica']
+
+        # Open new window
+        changefontwin = Toplevel(self.win)
+        changefontwin.iconbitmap(f'{workingdir}\\Assets\\icon.ico')
+        changefontwin.title("Modify Text Properties")
+        changefontwin.geometry('230x150')
+
+        sizeselect = IntVar(changefontwin)
+
+        fontselect = StringVar(changefontwin)
+
+        l0 = Label(changefontwin, text='')
+        l0.grid(row=1, column=0, sticky='W', ipady=5, ipadx=5)
+        l1 = Labelframe(changefontwin, text='Change Font Settings')
+        l1.grid(row=1, column=1, sticky='W', ipady=5, ipadx=5)
+
+        spacer = Label(l1, text="")
+        spacer.grid(row=1, column=2)
+
+        sizeoption = OptionMenu(l1, sizeselect, 12, *sizeoptions)
+        sizeoption.grid(row=2, column=1, sticky='W', ipady=5, ipadx=5)
+        sizeoption = OptionMenu(l1, fontselect, "Arial", *fontoptions)
+        sizeoption.grid(row=2, column=3, sticky='W', ipady=5, ipadx=5)
+
+        spacer1 = Label(l1, text="")
+        spacer1.grid(row=3, column=2)
+
+        saveandexit_button = Button(l1, text="Save", command=savefont)
+        saveandexit_button.grid(row=11, column=2, columnspan=1)
+
+
+        def change_size_dropdown(*args):
+            self.retsize = sizeselect.get()
+
+        def change_font_dropdown(*args):
+            self.retfont = fontselect.get()
+
+        sizeselect.trace('w', change_size_dropdown)
+
+        fontselect.trace('w', change_font_dropdown)
+
     def enableFullscreen(self,e):
 
         self.win.attributes('-fullscreen', True)
@@ -311,6 +416,15 @@ class GUI:
     def displaySensorData(self):
         # In here, CREATE each text display
 
+        # If an after statement as been generated, kill it
+        try:
+            self.afterid
+            self.win.after_cancel(self.afterid)
+        except AttributeError:
+            pass
+
+        self.canvas.delete('sensor')
+
         # Initialize Dictionary (Only way to create new canvas items in a loop, as seen below)
         self.dataDisplay = {}
 
@@ -318,14 +432,16 @@ class GUI:
         dataDict = GetCurData.getData()
 
         # Iterate through dictionary. If the sensor data was selected in dataDict, then create a canvas item
-        i = 0
         for key, value in dataDict.items():
             if key in self.sensorpollinfo:
-                self.dataDisplay[key] = self.canvas.create_text(50+i, 50, text=value, tags="text1")
-                i = i + 50
+                templist = self.sensorpollinfo.get(key)
+                x, y, font, size = [templist[i] for i in (0, 1, 2, 3)]
+                self.dataDisplay[key] = self.canvas.create_text(x, y, text=value, tags=("sensor", key), font=(font, size))
+
 
         # After 1 second, update sensors
         self.win.after(1000, self.updateSensorData)
+
 
     def updateSensorData(self):
         # In here, UPDATE each text display
@@ -339,18 +455,31 @@ class GUI:
                 self.canvas.itemconfigure(self.dataDisplay[key], text=value)
 
         # Update again after 1 second
-        self.win.after(1000, self.updateSensorData)
+        self.afterid = self.win.after(1000, self.updateSensorData)
 
     # Clear mouse bind to canvas item
     def clear_bind(self, event):
+
+        with open(f'{workingdir}\\Assets\\sensorpollconf.json', "r") as read_file:
+            self.sensorpollinfo = json.load(read_file)
+
+        for key, value in self.sensorpollinfo.items():
+            filex, filey, filefont, filesize = [value[i] for i in (0, 1, 2, 3)]
+            if self.res[0] == self.dataDisplay[key]:
+                templist = [self.objectx, self.objecty, filefont, filesize]
+                self.sensorpollinfo.update({key: templist})
+
+        with open(f'{workingdir}\\Assets\\sensorpollconf.json', "w") as write_file:
+            json.dump(self.sensorpollinfo, write_file)
+
         self.canvas.unbind("<B1-Motion>")
 
     # Find the nearest canvas item when mouse is clicked, bind that item to the mouse motion, making it draggable
     def nearest_item_with_tag(self, event):
-        res = self.canvas.find_closest(event.x, event.y, halo=0)
-        if res[0] == 1:
+        self.res = self.canvas.find_closest(event.x, event.y, halo=0)
+        if self.res[0] == 1:
             return
-        cmd = lambda x: self.relocate(res[0])
+        cmd = lambda x: self.relocate(self.res[0])
         self.canvas.bind("<B1-Motion>", cmd)
 
     # Use the mouse coordinates as the new location for the canvas item
@@ -358,6 +487,9 @@ class GUI:
         x0, y0 = self.canvas.winfo_pointerxy()
         x0 -= self.canvas.winfo_rootx()
         y0 -= self.canvas.winfo_rooty()
+
+        self.objectx = x0
+        self.objecty = y0
 
         self.canvas.coords(id, x0, y0,)
 
