@@ -108,12 +108,6 @@ class GUI:
             command=self.ChangeSensors
         )
 
-        # Add a menu item to the menu
-        self.settings_menu.add_command(
-            label='Save Screen Configuration',
-            command=self.saveOnScreenLocation
-        )
-
         # Add the settings menu to the menubar
         self.menubar.add_cascade(
             label="Settings",
@@ -139,17 +133,6 @@ class GUI:
     # Exit
     def ExitProgram(self):
         exit()
-
-    # Save each object location to text file
-    def saveOnScreenLocation(self):
-        # Iterate through dictionary, getting the coordinates of each item
-        for key in self.sensorpollinfo:
-            templist = self.canvas.coords(self.dataDisplay[key])
-            x, y = [templist[i] for i in (0, 1)]
-            self.sensorpollinfo.update({key: [x, y, 'Arial', 12]})
-
-            with open (f'{workingdir}\\Assets\\sensorpollconf.json', "w") as write_file:
-                json.dump(self.sensorpollinfo, write_file)
 
     # Prompt for new background
     def ChangeBackground(self):
@@ -432,11 +415,13 @@ class GUI:
         dataDict = GetCurData.getData()
 
         # Iterate through dictionary. If the sensor data was selected in dataDict, then create a canvas item
+        i = 0
         for key, value in dataDict.items():
             if key in self.sensorpollinfo:
                 templist = self.sensorpollinfo.get(key)
                 x, y, font, size = [templist[i] for i in (0, 1, 2, 3)]
-                self.dataDisplay[key] = self.canvas.create_text(x, y, text=value, tags=("sensor", key), font=(font, size))
+                self.dataDisplay[key] = self.canvas.create_text(x + i, y, text=value, tags="sensor", font=(font, size))
+                i = i + 50
 
 
         # After 1 second, update sensors
@@ -465,6 +450,8 @@ class GUI:
 
         for key, value in self.sensorpollinfo.items():
             filex, filey, filefont, filesize = [value[i] for i in (0, 1, 2, 3)]
+
+            #
             if self.res[0] == self.dataDisplay[key]:
                 templist = [self.objectx, self.objecty, filefont, filesize]
                 self.sensorpollinfo.update({key: templist})
