@@ -2,9 +2,13 @@
 
 # Import necessary libraries
 import serial
-import subprocess
 import datetime
 import array as arr
+import time
+from tkinter import *
+from tkinter.ttk import *
+import os
+import json
 
 crcarray = arr.array('i', [0x0, 0x1021, 0x2042, 0x3063, 0x4084, 0x50a5, 0x60c6, 0x70e7,
 0x8108, 0x9129, 0xa14a, 0xb16b, 0xc18c, 0xd1ad, 0xe1ce, 0xf1ef,
@@ -58,7 +62,14 @@ class SerData:
 
     # On creating class instance, connect to station and poll station for current data/highs & lows
     def __init__(self):
+        workingdir = os.getcwd()
 
+        with open(f'{workingdir}\\Assets\\comportconf.json', "r") as read_file:
+            self.COMPort = json.load(read_file)
+
+        self.openSerial()
+
+    def openSerial(self):
         # Determine which USB port the station is connected to
         #sub = "ttyUSB"
         #usbout = subprocess.Popen("dmesg | grep 'cp210x converter now attached'", stdout=subprocess.PIPE, shell=True)
@@ -67,15 +78,50 @@ class SerData:
         #sliced = temp[index:index + 7]
 
         # Connect to serial interface over the specified USB port
-        self.ser = serial.Serial(
+        try:
+            self.ser = serial.Serial(
             #port=(f'/dev/{sliced}'),
-            port='COM3',
+            port=self.COMPort,
             baudrate=19200,
             parity=serial.PARITY_NONE,
             stopbits=serial.STOPBITS_ONE,
             bytesize=serial.EIGHTBITS,
             timeout=None,
-        )
+            )
+        except:
+            workingdir = os.getcwd()
+
+            def saveandexit():
+                with open(f'{workingdir}\\Assets\\comportconf.json', "w") as write_file:
+                    json.dump(self.COMPort, write_file)
+                comwin.destroy()
+
+            self.COMPort = "COM3"
+
+            comwin = Tk()
+            comwin.geometry("250x150")
+            comwin.iconbitmap(f'{workingdir}\\Assets\\icon.ico')
+            comwin.title("Enter COM port settings")
+
+            comoptions = ['COM1', 'COM2', 'COM3', 'COM4', 'COM5', 'COM6', 'COM7', 'COM8']
+
+            comselect = StringVar(comwin)
+
+            comoption = OptionMenu(comwin, comselect, "COM3", *comoptions)
+            comoption.place(relx=.5, rely=.33, anchor="center")
+
+            saveandexit_button = Button(comwin, text="Save", command=saveandexit)
+            saveandexit_button.place(relx=.5, rely=.66, anchor="center")
+
+            def change_com_dropdown(*args):
+                self.COMPort = comselect.get()
+
+            comselect.trace('w', change_com_dropdown)
+
+            comwin.mainloop()
+
+            self.openSerial()
+
 
     def getData(self):
 
@@ -99,22 +145,22 @@ class SerData:
         # Get current indoor temp
         self.curintemp = self.read2byte(20)
         self.curintemp = self.curintemp[:-1] + '.' + self.curintemp[-1:]
-        self.sensorData.update({'curintemp': self.curintemp})
+        self.sensorData.update({'curintemp': self.curintemp + '\u00b0F'})
 
         # Get current indoor humidity
         self.curinhum = self.read1byte(24)
-        self.sensorData.update({'curinhum': self.curinhum})
+        self.sensorData.update({'curinhum': self.curinhum + '%'})
 
         # Get current outdoor temp
         self.curouttemp = self.read2byte(26)
         self.curouttemp = self.curouttemp[:-1] + '.' + self.curouttemp[-1:]
         if self.curouttemp != '3276.7':
-            self.sensorData.update({'curouttemp': self.curouttemp})
+            self.sensorData.update({'curouttemp': self.curouttemp + '\u00b0F'})
 
         # Get current wind speed
         self.curwinspeed = self.read1byte(30)
         if self.curwinspeed != '255':
-            self.sensorData.update({'curwinspeed': self.curwinspeed})
+            self.sensorData.update({'curwinspeed': self.curwinspeed + 'MPH'})
 
         # Get current wind direction
         self.curwindir = self.read2byte(34)
@@ -162,52 +208,52 @@ class SerData:
         # Get outside humidity
         self.curouthum = self.read1byte(68)
         if self.curouthum != '255':
-            self.sensorData.update({'curouthum': self.curouthum})
+            self.sensorData.update({'curouthum': self.curouthum + '%'})
 
         # Get daily rain
         self.curdailrain = self.read2byte(102)
         self.curdailrain = str(int(self.curdailrain) / 100)
-        self.sensorData.update({'curdailrain': self.curdailrain})
+        self.sensorData.update({'curdailrain': self.curdailrain + ' In.'})
 
         # Get rain rate
         self.curraterain = self.read2byte(84)
         self.curraterain = str(int(self.curraterain) / 100)
         if self.curraterain != '655.35':
-            self.sensorData.update({'curraterain': self.curraterain})
+            self.sensorData.update({'curraterain': self.curraterain + ' In./Hr'})
 
         # Get high daily wind speed
         self.hiwinspeed = self.read1byte1(34)
-        self.sensorData.update({'hiwinspeed': self.hiwinspeed})
+        self.sensorData.update({'hiwinspeed': self.hiwinspeed + 'MPH'})
 
         # Get high daily indoor temp
         self.hiintemp = self.read2byte1(44)
         self.hiintemp = self.hiintemp[:-1] + '.' + self.hiintemp[-1:]
-        self.sensorData.update({'hiintemp': self.hiintemp})
+        self.sensorData.update({'hiintemp': self.hiintemp + '\u00b0F'})
 
         # Get low daily indoor temp
         self.lointemp = self.read2byte1(48)
         self.lointemp = self.lointemp[:-1] + '.' + self.lointemp[-1:]
-        self.sensorData.update({'lointemp': self.lointemp})
+        self.sensorData.update({'lointemp': self.lointemp + '\u00b0F'})
 
         # Get high daily indoor humidity
         self.hiinhum = self.read1byte1(76)
-        self.sensorData.update({'hiinhum': self.hiinhum})
+        self.sensorData.update({'hiinhum': self.hiinhum + '%'})
 
         # Get low daily indoor humidity
         self.loinhum = self.read1byte1(78)
-        self.sensorData.update({'loinhum': self.loinhum})
+        self.sensorData.update({'loinhum': self.loinhum + '%'})
 
         # Get high daily outdoor temperature
         self.hiouttemp = self.read2byte1(100)
         self.hiouttemp = self.hiouttemp[:-1] + '.' + self.hiouttemp[-1:]
         if self.hiouttemp != '3276.8':
-            self.sensorData.update({'hiouttemp': self.hiouttemp})
+            self.sensorData.update({'hiouttemp': self.hiouttemp + '\u00b0F'})
 
         # Get low daily outdoor temperature
         self.loouttemp = self.read2byte1(96)
         self.loouttemp = self.loouttemp[:-1] + '.' + self.loouttemp[-1:]
         if self.loouttemp != '3276.7':
-            self.sensorData.update({'loouttemp': self.loouttemp})
+            self.sensorData.update({'loouttemp': self.loouttemp + '\u00b0F'})
 
         return(self.sensorData)
 
@@ -239,28 +285,6 @@ class SerData:
         curval = str(int(curval, 16))
         return curval
 
-
-    # Upon deletion of the class instance, print all data values. In actual deployment this should not exist. This is
-    # useful for debugging, however. Shows that all values are being calculated properly
-    def __del__(self):
-        print(f'The highest wind speed today is: {self.hiwinspeed} MPH')
-        print(f'The highest indoor temperature today is: {self.hiintemp}\u00b0F')
-        print(f'The lowest indoor temperature today is: {self.lointemp}\u00b0F')
-        print(f'The highest indoor humidity today is {self.hiinhum}%')
-        print(f'The lowest indoor humidity today is {self.loinhum}%')
-        print(f'The highest outdoor temperature today is: {self.hiouttemp}\u00b0F')
-        print(f'The lowest outdoor temperature today is: {self.loouttemp}\u00b0F')
-
-        print(f'The current indoor temperature is: {self.curintemp}\u00b0F')
-        print(f'The current indoor humidity is: {self.curinhum}%')
-        print(f'The current outdoor temperature is: {self.curouttemp}\u00b0F')
-        print(f'The current wind speed is: {self.curwinspeed} MPH')
-        print(f'The current wind direction is {self.curwindir}')
-        print(f'The current outdoor humidity is: {self.curouthum}%')
-        print(f'The daily rain is: {self.curdailrain} inches')
-        print(f'The rain rate is: {self.curdailrain} inches per hour')
-
-
     def updateTime(self):
 
         # Initialize Array
@@ -283,14 +307,6 @@ class SerData:
         data_bytes.insert(4, system_time_month)
         data_bytes.insert(5, system_time_year)
 
-        print(data_bytes)
-
-        # Example data provided by Davis. Used for testing
-        # data_bytes.insert(0, 0xc6)
-        # data_bytes.insert(1, 0xce)
-        # data_bytes.insert(2, 0xa2)
-        # data_bytes.insert(3, 0x03)
-
         # Calculate CRC
         crc_bytes = calcCRC(data_bytes)
 
@@ -298,17 +314,11 @@ class SerData:
         hi = crc_bytes >> 8
         lo = crc_bytes & 0xff
 
-        # Place CRC bytes into array
-        data_bytes.insert(6, hi)
-        data_bytes.insert(7, lo)
-
-        # Place array items into string
-        string = ''
-        for i in data_bytes:
-            string = string + str(i)
+        crcbytearray = bytearray([system_time_second, system_time_minute, system_time_hour, system_time_day, system_time_month, system_time_year, hi, lo])
 
         # Send time
         self.ser.flushInput()
         self.ser.flushOutput()
         self.ser.write(str.encode("SETTIME\n"))
-        self.ser.write(str.encode(string))
+        time.sleep(.50)
+        self.ser.write(crcbytearray)
