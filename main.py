@@ -1,7 +1,6 @@
 # Import the required libraries
 from tkinter import *
 from tkinter.ttk import *
-#import ttkbootstrap as ttkb
 from ttkbootstrap.constants import *
 from tkinter import filedialog
 from PIL import ImageTk, Image
@@ -15,9 +14,6 @@ GetCurData = serialcompi.SerData()
 
 # Sync Time
 GetCurData.updateTime()
-
-# Destroy Class Instance - Run destructor and print all data objects
-#del GetCurData
 
 # Get current directory
 workingdir = os.getcwd()
@@ -38,6 +34,8 @@ class GUI:
         # Open file and read sensor poll list
         with open(f'{workingdir}\\Assets\\sensorpollconf.json', "r") as read_file:
             self.sensorpollinfo = json.load(read_file)
+
+        self.labelinfo = {}
 
         # Create an instance of Tkinter Frame
         self.win = Tk()
@@ -108,6 +106,18 @@ class GUI:
             command=self.ChangeSensors
         )
 
+        # Add a menu item to the menu
+        self.settings_menu.add_command(
+            label='Add On-Screen Text',
+            command=self.AddTextLabel
+        )
+
+        # Add a menu item to the menu
+        self.settings_menu.add_command(
+            label='Remove All On-Screen Text',
+            command=self.RemoveTextLabel
+        )
+
         # Add the settings menu to the menubar
         self.menubar.add_cascade(
             label="Settings",
@@ -125,7 +135,8 @@ class GUI:
         self.canvas.bind("<Button-3>", self.right_click)
 
         # Call initial function to display sensor data. This function will auto-loop itself
-        self.displaySensorData()
+        self.spawnLabels()
+        self.spawnItems()
 
 
 # Insert Menu Buttons here
@@ -211,7 +222,7 @@ class GUI:
             # Clear out any repeated selections
             for i in templist:
                 if i not in self.sensorpollinfo:
-                    self.sensorpollinfo.update({i: [50, 50, 'Arial', 12]})
+                    self.sensorpollinfo.update({i: [50, 50, 'Arial', 12, 'black']})
 
             # Save to file
             with open (f'{workingdir}\\Assets\\sensorpollconf.json', "w") as write_file:
@@ -220,7 +231,7 @@ class GUI:
             # Close window
             changesensorwin.destroy()
 
-            self.displaySensorData()
+            self.displayNewSensors()
 
         # Initialize each variable
         selcurintemp = IntVar()
@@ -286,6 +297,25 @@ class GUI:
         saveandexit_button = Button(changesensorwin, text="Save", command=save)
         saveandexit_button.grid(row=11, column=2, columnspan=1)
 
+    def AddTextLabel(self):
+        self.labelinfo.update({self.labelcount: [50, 50, 'Arial', 12, 'black', "Right Click To Change"]})
+
+        self.labelcount = self.labelcount + 1
+
+        with open(f'{workingdir}\\Assets\\textlabelconf.json', "w") as write_file:
+            json.dump(self.labelinfo, write_file)
+
+        self.spawnLabels()
+
+    def RemoveTextLabel(self):
+        self.canvas.delete('label')
+
+        # Empty file
+        self.labelinfo = {}
+        with open(f'{workingdir}\\Assets\\textlabelconf.json', "w") as write_file:
+            json.dump(self.labelinfo, write_file)
+
+
 
 # Insert Update Events Here
 
@@ -299,12 +329,140 @@ class GUI:
         self.image2 = ImageTk.PhotoImage(self.resized)
         self.canvas.itemconfig(self.image_id, image=self.image2)
 
+    def labelChange(self):
+
+        def destroylabel():
+
+            with open(f'{workingdir}\\Assets\\textlabelconf.json', "r") as read_file:
+                self.labelinfo = json.load(read_file)
+
+            for key, value in self.labelinfo.items():
+                if self.res[0] == self.label[key]:
+                    del self.labelinfo[key]
+                    break
+
+            with open(f'{workingdir}\\Assets\\textlabelconf.json', "w") as write_file:
+                json.dump(self.labelinfo, write_file)
+
+            changelabelwin.destroy()
+
+            self.spawnLabels()
+
+        def savelabel():
+
+            self.rettext = entry.get()
+            if self.rettext == "":
+                self.rettext = "Right Click to Change"
+
+            with open(f'{workingdir}\\Assets\\textlabelconf.json', "r") as read_file:
+                self.labelinfo = json.load(read_file)
+
+            for key, value in self.labelinfo.items():
+                filex, filey, filefont, filesize, filecolor, filetext = [value[i] for i in (0, 1, 2, 3, 4, 4)]
+
+                if self.res[0] == self.label[key]:
+                    templist = [filex, filey, self.retfont, self.retsize, self.retcolor, self.rettext]
+                    self.labelinfo.update({key: templist})
+
+            with open(f'{workingdir}\\Assets\\textlabelconf.json', "w") as write_file:
+                json.dump(self.labelinfo, write_file)
+
+            changelabelwin.destroy()
+
+            self.spawnLabels()
+
+        templist = self.canvas.coords(self.res[0])
+        self.objectx, self.objecty = [templist[i] for i in (0, 1)]
+
+        sizeoptions = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25,
+                       26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48,
+                       49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71,
+                       72, 73, 74, 75
+                       ]
+
+        fontoptions = ['Arial', 'Helvetica', 'Times', 'Calibri']
+
+        coloroptions = ["Black", "White", "Gray", "Light Gray", "Pink", "Red", "Orange", "Yellow", "Lime", "Green",
+                        "Cyan", "Blue", "Purple", "Brown"]
+
+        # Open new window
+        changelabelwin = Toplevel(self.win)
+        changelabelwin.iconbitmap(f'{workingdir}\\Assets\\icon.ico')
+        changelabelwin.title("Modify Text Properties")
+        changelabelwin.geometry('335x265')
+
+        sizeselect = IntVar(changelabelwin)
+
+        fontselect = StringVar(changelabelwin)
+
+        colorselect = StringVar(changelabelwin)
+
+        l0 = Label(changelabelwin, text='')
+        l0.grid(row=1, column=0, sticky='W', ipady=5, ipadx=5)
+        l1 = Labelframe(changelabelwin, text='Change Label Settings')
+        l1.grid(row=1, column=1, sticky='W', ipady=5, ipadx=5)
+
+        spacer = Label(l1, text="")
+        spacer.grid(row=1, column=2)
+
+        sizeoption = OptionMenu(l1, sizeselect, 12, *sizeoptions)
+        sizeoption.grid(row=2, column=1, sticky='W', ipady=5, ipadx=5)
+
+        spacer1 = Label(l1, text="")
+        spacer1.grid(row=2, column=2)
+
+        coloroption = OptionMenu(l1, colorselect, "Black", *coloroptions)
+        coloroption.grid(row=2, column=3, sticky='N', ipady=5, ipadx=5)
+
+        spacer2 = Label(l1, text="")
+        spacer2.grid(row=2, column=4)
+
+        fontoption = OptionMenu(l1, fontselect, "Arial", *fontoptions)
+        fontoption.grid(row=2, column=5, sticky='E', ipady=5, ipadx=5)
+
+        spacer3 = Label(l1, text="")
+        spacer3.grid(row=3, column=2)
+
+        l2 = Label(l1, text='Enter Label Text')
+        l2.grid(row=4, column=3, sticky='N')
+
+        entry = Entry(l1)
+        entry.grid(row=5, column=3, sticky='N')
+
+        spacer4 = Label(l1, text="")
+        spacer4.grid(row=6, column=1)
+
+        saveandexit_button = Button(l1, text="Save", command=savelabel)
+        saveandexit_button.grid(row=11, column=3, columnspan=1, sticky='N')
+
+        spacer5 = Label(l1, text ="")
+        spacer5.grid(row=12, column=1)
+
+        destroy_button = Button(l1, text="Delete", command=destroylabel)
+        destroy_button.grid(row=22, column=3, columnspan=1, sticky='N')
+
+        def change_size_dropdown(*args):
+            self.retsize = sizeselect.get()
+
+        def change_font_dropdown(*args):
+            self.retfont = fontselect.get()
+
+        def change_color_dropdown(*args):
+            self.retcolor = colorselect.get()
+
+        sizeselect.trace('w', change_size_dropdown)
+
+        fontselect.trace('w', change_font_dropdown)
+
+        colorselect.trace('w', change_color_dropdown)
+
     def right_click(self, event):
 
         # Set default return value. Will change if the user changes the selection, but sets the variable if the user
         # doesn't select something
         self.retfont = "Arial"
-        self.retsize = "12"
+        self.retsize = 12
+        self.retcolor = "Black"
 
         def savefont():
 
@@ -312,25 +470,30 @@ class GUI:
                 self.sensorpollinfo = json.load(read_file)
 
             for key, value in self.sensorpollinfo.items():
-                filex, filey, filefont, filesize = [value[i] for i in (0, 1, 2, 3)]
-                if filex == self.objectx and filey == self.objecty:
-                    templist = [filex, filey, self.retfont, self.retsize]
+                filex, filey, filefont, filesize, filecolor = [value[i] for i in (0, 1, 2, 3, 4)]
+
+                if self.res[0] == self.dataDisplay[key]:
+                    templist = [filex, filey, self.retfont, self.retsize, self.retcolor]
                     self.sensorpollinfo.update({key: templist})
 
-            with open (f'{workingdir}\\Assets\\sensorpollconf.json', "w") as write_file:
+            with open(f'{workingdir}\\Assets\\sensorpollconf.json', "w") as write_file:
                 json.dump(self.sensorpollinfo, write_file)
 
             changefontwin.destroy()
 
-            self.displaySensorData()
+            self.spawnItems()
 
 
-
-
-        res = self.canvas.find_closest(event.x, event.y, halo=0)
-        if res[0] == 1:
+        self.res = self.canvas.find_closest(event.x, event.y, halo=0)
+        if self.res[0] == 1:
             return
-        templist = self.canvas.coords(res[0])
+
+        # Checks if it's a label value that was right clicked
+        if self.res[0] in self.label.values():
+            self.labelChange()
+            return
+
+        templist = self.canvas.coords(self.res[0])
         self.objectx, self.objecty = [templist[i] for i in (0, 1)]
 
 
@@ -340,17 +503,21 @@ class GUI:
                        72, 73, 74, 75
                       ]
 
-        fontoptions = ['Arial', 'Helvetica']
+        fontoptions = ['Arial', 'Helvetica', 'Times', 'Calibri']
+
+        coloroptions = ["Black", "White", "Gray", "Light Gray", "Pink", "Red", "Orange", "Yellow", "Lime", "Green", "Cyan", "Blue", "Purple", "Brown"]
 
         # Open new window
         changefontwin = Toplevel(self.win)
         changefontwin.iconbitmap(f'{workingdir}\\Assets\\icon.ico')
         changefontwin.title("Modify Text Properties")
-        changefontwin.geometry('230x150')
+        changefontwin.geometry('285x150')
 
         sizeselect = IntVar(changefontwin)
 
         fontselect = StringVar(changefontwin)
+
+        colorselect = StringVar(changefontwin)
 
         l0 = Label(changefontwin, text='')
         l0.grid(row=1, column=0, sticky='W', ipady=5, ipadx=5)
@@ -362,14 +529,24 @@ class GUI:
 
         sizeoption = OptionMenu(l1, sizeselect, 12, *sizeoptions)
         sizeoption.grid(row=2, column=1, sticky='W', ipady=5, ipadx=5)
-        sizeoption = OptionMenu(l1, fontselect, "Arial", *fontoptions)
-        sizeoption.grid(row=2, column=3, sticky='W', ipady=5, ipadx=5)
 
         spacer1 = Label(l1, text="")
-        spacer1.grid(row=3, column=2)
+        spacer1.grid(row=2, column=2)
+
+        coloroption = OptionMenu(l1, colorselect, "Black", *coloroptions)
+        coloroption.grid(row=2, column=3, sticky='W', ipady=5, ipadx=5)
+
+        spacer2 = Label(l1, text="")
+        spacer2.grid(row=2, column=4)
+
+        fontoption = OptionMenu(l1, fontselect, "Arial", *fontoptions)
+        fontoption.grid(row=2, column=5, sticky='W', ipady=5, ipadx=5)
+
+        spacer3 = Label(l1, text="")
+        spacer3.grid(row=3, column=2)
 
         saveandexit_button = Button(l1, text="Save", command=savefont)
-        saveandexit_button.grid(row=11, column=2, columnspan=1)
+        saveandexit_button.grid(row=11, column=3, columnspan=1)
 
 
         def change_size_dropdown(*args):
@@ -378,9 +555,14 @@ class GUI:
         def change_font_dropdown(*args):
             self.retfont = fontselect.get()
 
+        def change_color_dropdown(*args):
+            self.retcolor = colorselect.get()
+
         sizeselect.trace('w', change_size_dropdown)
 
         fontselect.trace('w', change_font_dropdown)
+
+        colorselect.trace('w', change_color_dropdown)
 
     def enableFullscreen(self,e):
 
@@ -396,7 +578,7 @@ class GUI:
         # Add menubar
         self.win.config(menu=self.menubar)
 
-    def displaySensorData(self):
+    def displayNewSensors(self):
         # In here, CREATE each text display
 
         # If an after statement as been generated, kill it
@@ -412,30 +594,111 @@ class GUI:
         self.dataDisplay = {}
 
         # Populate dictionary with sensor data
-        dataDict = GetCurData.getData()
+        self.dataDict = GetCurData.getData()
+
+        # Iterate through dictionary. If the sensor data was selected in dataDict, then create a canvas item
+        i = 50
+        for key, value in self.dataDict.items():
+            if key in self.sensorpollinfo:
+                templist = self.sensorpollinfo.get(key)
+                x, y, font, size, color = [templist[i] for i in (0, 1, 2, 3, 4)]
+
+                if key == 'curintemp':
+                    sensorname = 'Current In. Temp.'
+                if key == 'curinhum':
+                    sensorname = 'Current In. Hum.'
+                if key == 'curouttemp':
+                    sensorname = 'Current Out. Temp.'
+                if key == 'curwinspeed':
+                    sensorname = 'Current Wind Speed'
+                if key == 'curwindir':
+                    sensorname = 'Current Wind Dir.'
+                if key == 'curouthum':
+                    sensorname = 'Current Out. Hum.'
+                if key == 'curdailrain':
+                    sensorname = 'Daily Rain'
+                if key == 'curraterain':
+                    sensorname = 'Rain Rate'
+                if key == 'hiwinspeed':
+                    sensorname = 'High Wind Speed'
+                if key == 'hiintemp':
+                    sensorname = 'High In. Temp.'
+                if key == 'lointemp':
+                    sensorname = 'Low In. Temp.'
+                if key == 'hiinhum':
+                    sensorname = 'High In. Hum.'
+                if key == 'loinhum':
+                    sensorname = 'Low In. Hum.'
+                if key == 'hiouttemp':
+                    sensorname = 'High Out. Temp.'
+                if key == 'loouttemp':
+                    sensorname = 'Low Out. Temp.'
+
+
+                self.dataDisplay[key] = self.canvas.create_text(x + i, y, text=sensorname, tags="sensor", font=(font, size), fill=color)
+                i = i + 130
+
+        # After 1 second, update sensors
+        self.afterid = self.win.after(10000, self.updateSensorData)
+
+    def spawnLabels(self):
+
+        # Remove all on-screen items
+        self.canvas.delete('label')
+
+        # Empty dictionary
+        self.label = {}
+
+        self.labelcount = 0
+
+        with open(f'{workingdir}\\Assets\\textlabelconf.json', "r") as read_file:
+            self.labelinfo = json.load(read_file)
+
+        for key, value in self.labelinfo.items():
+            templist = self.labelinfo.get(key)
+            x, y, font, size, color, filetext = [templist[i] for i in (0, 1, 2, 3, 4, 5)]
+            self.label[key] = self.canvas.create_text(x, y, text=filetext, tags='label', font=(font, size), fill=color)
+            self.labelcount = self.labelcount + 1
+
+    def spawnItems(self):
+        # In here, CREATE each text display
+
+        # If an after statement as been generated, kill it
+        try:
+            self.afterid
+            self.win.after_cancel(self.afterid)
+        except AttributeError:
+            pass
+
+        self.canvas.delete('sensor')
+
+        # Initialize Dictionary (Only way to create new canvas items in a loop, as seen below)
+        self.dataDisplay = {}
+
+        # Populate dictionary with sensor data
+        self.dataDict = GetCurData.getData()
 
         # Iterate through dictionary. If the sensor data was selected in dataDict, then create a canvas item
         i = 0
-        for key, value in dataDict.items():
+        for key, value in self.dataDict.items():
             if key in self.sensorpollinfo:
                 templist = self.sensorpollinfo.get(key)
-                x, y, font, size = [templist[i] for i in (0, 1, 2, 3)]
-                self.dataDisplay[key] = self.canvas.create_text(x + i, y, text=value, tags="sensor", font=(font, size))
-                i = i + 50
-
+                x, y, font, size, color = [templist[i] for i in (0, 1, 2, 3, 4)]
+                self.dataDisplay[key] = self.canvas.create_text(x, y, text=value, tags="sensor", font=(font, size), fill=color)
+                i = i + 75
 
         # After 1 second, update sensors
-        self.win.after(1000, self.updateSensorData)
+        self.afterid = self.win.after(1000, self.updateSensorData)
 
 
     def updateSensorData(self):
         # In here, UPDATE each text display
 
         # Populate dictionary with sensor data
-        dataDict = GetCurData.getData()
+        self.dataDict = GetCurData.getData()
 
         # Iterate through dictionary, updating each on-screen value
-        for key, value in dataDict.items():
+        for key, value in self.dataDict.items():
             if key in self.sensorpollinfo:
                 self.canvas.itemconfigure(self.dataDisplay[key], text=value)
 
@@ -445,21 +708,39 @@ class GUI:
     # Clear mouse bind to canvas item
     def clear_bind(self, event):
 
+        self.canvas.unbind("<B1-Motion>")
+
         with open(f'{workingdir}\\Assets\\sensorpollconf.json', "r") as read_file:
             self.sensorpollinfo = json.load(read_file)
 
-        for key, value in self.sensorpollinfo.items():
-            filex, filey, filefont, filesize = [value[i] for i in (0, 1, 2, 3)]
+        with open(f'{workingdir}\\Assets\\textlabelconf.json', "r") as read_file:
+            self.labelinfo = json.load(read_file)
 
-            #
+        for key, value in self.sensorpollinfo.items():
+            filex, filey, filefont, filesize, filecolor = [value[i] for i in (0, 1, 2, 3, 4)]
+
             if self.res[0] == self.dataDisplay[key]:
-                templist = [self.objectx, self.objecty, filefont, filesize]
+                templist = [self.objectx, self.objecty, filefont, filesize, filecolor]
                 self.sensorpollinfo.update({key: templist})
+
+        # After an item is initially created (not on program start, but if sensor selection is changes), this updates the displayed text when the item is drug around the screen
+        for key, value in self.sensorpollinfo.items():
+            if self.res[0] == self.dataDisplay[key]:
+                self.canvas.itemconfigure(self.dataDisplay[key], text=self.dataDict[key])
+
+
+        for key, value in self.labelinfo.items():
+            filex, filey, filefont, filesize, filecolor, filetext = [value[i] for i in (0, 1, 2, 3, 4, 5)]
+
+            if self.res[0] == self.label[key]:
+                templist = [self.objectx, self.objecty, filefont, filesize, filecolor, filetext]
+                self.labelinfo.update({key: templist})
 
         with open(f'{workingdir}\\Assets\\sensorpollconf.json', "w") as write_file:
             json.dump(self.sensorpollinfo, write_file)
 
-        self.canvas.unbind("<B1-Motion>")
+        with open(f'{workingdir}\\Assets\\textlabelconf.json', "w") as write_file:
+            json.dump(self.labelinfo, write_file)
 
     # Find the nearest canvas item when mouse is clicked, bind that item to the mouse motion, making it draggable
     def nearest_item_with_tag(self, event):
@@ -510,7 +791,7 @@ canvas.pack(fill=BOTH, expand=True)
 canvas.create_image(0,0, image=image2, anchor='nw')
 
 # After x amount of milliseconds, create instance of GUI class (which destroys splashscreen)
-splash_root.after(30, GUI)
+splash_root.after(3000, GUI)
 
 
 mainloop()
