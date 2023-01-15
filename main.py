@@ -35,6 +35,7 @@ class GUI:
         with open(f'{workingdir}\\Assets\\sensorpollconf.json', "r") as read_file:
             self.sensorpollinfo = json.load(read_file)
 
+        # Initialize dictionary as blank
         self.labelinfo = {}
 
         # Create an instance of Tkinter Frame
@@ -134,8 +135,9 @@ class GUI:
         self.canvas.bind("<Button-2>", self.right_click)
         self.canvas.bind("<Button-3>", self.right_click)
 
-        # Call initial function to display sensor data. This function will auto-loop itself
+        # Call function to create labels
         self.spawnLabels()
+        # Call initial function to display sensor data. This function will auto-loop itself
         self.spawnItems()
 
 
@@ -297,21 +299,27 @@ class GUI:
         saveandexit_button = Button(changesensorwin, text="Save", command=save)
         saveandexit_button.grid(row=11, column=2, columnspan=1)
 
+    # Add new label on-screen
     def AddTextLabel(self):
-        self.labelinfo.update({self.labelcount: [50, 50, 'Arial', 12, 'black', "Right Click To Change"]})
+        # Add new label item to dictionary
+        self.labelinfo.update({(len(self.label) + 1): [75, 75, 'Arial', 12, 'black', "Right Click To Change"]})
 
-        self.labelcount = self.labelcount + 1
-
+        # Save dictionary to file
         with open(f'{workingdir}\\Assets\\textlabelconf.json', "w") as write_file:
             json.dump(self.labelinfo, write_file)
 
+        # Spawn labels again
         self.spawnLabels()
 
+    # Remove all on-screen text labels
     def RemoveTextLabel(self):
+        # Delete all on-screen objects with tag of label
         self.canvas.delete('label')
 
-        # Empty file
+        # Empty dictionary
         self.labelinfo = {}
+
+        # Save empty dictionary to file
         with open(f'{workingdir}\\Assets\\textlabelconf.json', "w") as write_file:
             json.dump(self.labelinfo, write_file)
 
@@ -329,59 +337,79 @@ class GUI:
         self.image2 = ImageTk.PhotoImage(self.resized)
         self.canvas.itemconfig(self.image_id, image=self.image2)
 
+    # Change text properties for a label
     def labelChange(self):
-
+        # Destroy a single label
         def destroylabel():
 
+            # Read text file
             with open(f'{workingdir}\\Assets\\textlabelconf.json', "r") as read_file:
                 self.labelinfo = json.load(read_file)
 
+            # If the selected item matches, delete it from the dictionary
             for key, value in self.labelinfo.items():
                 if self.res[0] == self.label[key]:
                     del self.labelinfo[key]
                     break
 
+            # Save the dictionary to file
             with open(f'{workingdir}\\Assets\\textlabelconf.json', "w") as write_file:
                 json.dump(self.labelinfo, write_file)
 
+            # Close sub window
             changelabelwin.destroy()
 
+            # Recreate on-screen labels
             self.spawnLabels()
 
+        # Save label settings
         def savelabel():
 
+            # Get the user entered text
             self.rettext = entry.get()
+
+            # If the text box was left blank, set to default
             if self.rettext == "":
                 self.rettext = "Right Click to Change"
 
+            # Open label config file
             with open(f'{workingdir}\\Assets\\textlabelconf.json', "r") as read_file:
                 self.labelinfo = json.load(read_file)
 
+            # Iterate through dictionary
             for key, value in self.labelinfo.items():
                 filex, filey, filefont, filesize, filecolor, filetext = [value[i] for i in (0, 1, 2, 3, 4, 4)]
 
+                # If the dictionary item matches the selected item, update the dictionary with the new text settings
                 if self.res[0] == self.label[key]:
                     templist = [filex, filey, self.retfont, self.retsize, self.retcolor, self.rettext]
                     self.labelinfo.update({key: templist})
 
+            # Save dictionary to file
             with open(f'{workingdir}\\Assets\\textlabelconf.json', "w") as write_file:
                 json.dump(self.labelinfo, write_file)
 
+            # Destroy sub-window
             changelabelwin.destroy()
 
+            # Recreate label items
             self.spawnLabels()
 
+        # Get current coordinates of the selected label item
         templist = self.canvas.coords(self.res[0])
         self.objectx, self.objecty = [templist[i] for i in (0, 1)]
 
+        # Create list of different size options
         sizeoptions = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25,
                        26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48,
                        49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71,
                        72, 73, 74, 75
                        ]
 
+        # Create list of different font options
         fontoptions = ['Arial', 'Helvetica', 'Times', 'Calibri']
 
+        # Create list of different color options
         coloroptions = ["Black", "White", "Gray", "Light Gray", "Pink", "Red", "Orange", "Yellow", "Lime", "Green",
                         "Cyan", "Blue", "Purple", "Brown"]
 
@@ -391,12 +419,16 @@ class GUI:
         changelabelwin.title("Modify Text Properties")
         changelabelwin.geometry('335x265')
 
+        # Set size select variable as Int
         sizeselect = IntVar(changelabelwin)
 
+        # Set font select variable as String
         fontselect = StringVar(changelabelwin)
 
+        # Set color select variable as String
         colorselect = StringVar(changelabelwin)
 
+        # Create GUI widgets
         l0 = Label(changelabelwin, text='')
         l0.grid(row=1, column=0, sticky='W', ipady=5, ipadx=5)
         l1 = Labelframe(changelabelwin, text='Change Label Settings')
@@ -441,19 +473,25 @@ class GUI:
         destroy_button = Button(l1, text="Delete", command=destroylabel)
         destroy_button.grid(row=22, column=3, columnspan=1, sticky='N')
 
+        # Get the size selection
         def change_size_dropdown(*args):
             self.retsize = sizeselect.get()
 
+        # Get the font selection
         def change_font_dropdown(*args):
             self.retfont = fontselect.get()
 
+        # Get the color selection
         def change_color_dropdown(*args):
             self.retcolor = colorselect.get()
 
+        # If size is changed, call change_size_dropdown
         sizeselect.trace('w', change_size_dropdown)
 
+        # If font is changed, call change_font_dropdown
         fontselect.trace('w', change_font_dropdown)
 
+        # If color is changed, call change_color_dropdown
         colorselect.trace('w', change_color_dropdown)
 
     def right_click(self, event):
@@ -466,25 +504,32 @@ class GUI:
 
         def savefont():
 
+            # Read text file
             with open(f'{workingdir}\\Assets\\sensorpollconf.json', "r") as read_file:
                 self.sensorpollinfo = json.load(read_file)
 
+            # Iterate through dictionary
             for key, value in self.sensorpollinfo.items():
                 filex, filey, filefont, filesize, filecolor = [value[i] for i in (0, 1, 2, 3, 4)]
 
+                # If the dictionary value matches the selected item, update it with the new information
                 if self.res[0] == self.dataDisplay[key]:
                     templist = [filex, filey, self.retfont, self.retsize, self.retcolor]
                     self.sensorpollinfo.update({key: templist})
 
+            # Save the dictionary to file
             with open(f'{workingdir}\\Assets\\sensorpollconf.json', "w") as write_file:
                 json.dump(self.sensorpollinfo, write_file)
 
+            # Destroy sub-window
             changefontwin.destroy()
 
+            # Re-create items
             self.spawnItems()
 
-
+        # Get the ID of the nearest items
         self.res = self.canvas.find_closest(event.x, event.y, halo=0)
+        # If it's the ID of the background, dont do anything
         if self.res[0] == 1:
             return
 
@@ -493,18 +538,21 @@ class GUI:
             self.labelChange()
             return
 
+        # Get the current coordinates of the selected item
         templist = self.canvas.coords(self.res[0])
         self.objectx, self.objecty = [templist[i] for i in (0, 1)]
 
-
+        # Create list with size options
         sizeoptions = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25,
                        26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48,
                        49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71,
                        72, 73, 74, 75
                       ]
 
+        # Create list with font options
         fontoptions = ['Arial', 'Helvetica', 'Times', 'Calibri']
 
+        # Create list with color options
         coloroptions = ["Black", "White", "Gray", "Light Gray", "Pink", "Red", "Orange", "Yellow", "Lime", "Green", "Cyan", "Blue", "Purple", "Brown"]
 
         # Open new window
@@ -513,12 +561,16 @@ class GUI:
         changefontwin.title("Modify Text Properties")
         changefontwin.geometry('285x150')
 
+        # Set size select variable as Int
         sizeselect = IntVar(changefontwin)
 
+        # Set font select variable as String
         fontselect = StringVar(changefontwin)
 
+        # Set color select variable as String
         colorselect = StringVar(changefontwin)
 
+        # Create window widgets
         l0 = Label(changefontwin, text='')
         l0.grid(row=1, column=0, sticky='W', ipady=5, ipadx=5)
         l1 = Labelframe(changefontwin, text='Change Font Settings')
@@ -548,20 +600,25 @@ class GUI:
         saveandexit_button = Button(l1, text="Save", command=savefont)
         saveandexit_button.grid(row=11, column=3, columnspan=1)
 
-
+        # Get size selection
         def change_size_dropdown(*args):
             self.retsize = sizeselect.get()
 
+        # Get font selection
         def change_font_dropdown(*args):
             self.retfont = fontselect.get()
 
+        # Get color selection
         def change_color_dropdown(*args):
             self.retcolor = colorselect.get()
 
+        # If size is changed, call change_size_dropdown
         sizeselect.trace('w', change_size_dropdown)
 
+        # If font is changed, call change_font_dropdown
         fontselect.trace('w', change_font_dropdown)
 
+        # If color is changed, call change_color_dropdown
         colorselect.trace('w', change_color_dropdown)
 
     def enableFullscreen(self,e):
@@ -588,6 +645,7 @@ class GUI:
         except AttributeError:
             pass
 
+        # Delete all on-screen items with tag sensor
         self.canvas.delete('sensor')
 
         # Initialize Dictionary (Only way to create new canvas items in a loop, as seen below)
@@ -643,22 +701,21 @@ class GUI:
 
     def spawnLabels(self):
 
-        # Remove all on-screen items
+        # Remove all on-screen items with tag label
         self.canvas.delete('label')
 
         # Empty dictionary
         self.label = {}
 
-        self.labelcount = 0
-
+        # Read file
         with open(f'{workingdir}\\Assets\\textlabelconf.json', "r") as read_file:
             self.labelinfo = json.load(read_file)
 
+        # Iterate through dictionary, spawning label items
         for key, value in self.labelinfo.items():
             templist = self.labelinfo.get(key)
             x, y, font, size, color, filetext = [templist[i] for i in (0, 1, 2, 3, 4, 5)]
             self.label[key] = self.canvas.create_text(x, y, text=filetext, tags='label', font=(font, size), fill=color)
-            self.labelcount = self.labelcount + 1
 
     def spawnItems(self):
         # In here, CREATE each text display
@@ -670,6 +727,7 @@ class GUI:
         except AttributeError:
             pass
 
+        # Delete all items with tag sensor
         self.canvas.delete('sensor')
 
         # Initialize Dictionary (Only way to create new canvas items in a loop, as seen below)
@@ -710,15 +768,19 @@ class GUI:
 
         self.canvas.unbind("<B1-Motion>")
 
+        # Read file
         with open(f'{workingdir}\\Assets\\sensorpollconf.json', "r") as read_file:
             self.sensorpollinfo = json.load(read_file)
 
+        # Read file
         with open(f'{workingdir}\\Assets\\textlabelconf.json', "r") as read_file:
             self.labelinfo = json.load(read_file)
 
+        # Iterate through dictionary
         for key, value in self.sensorpollinfo.items():
             filex, filey, filefont, filesize, filecolor = [value[i] for i in (0, 1, 2, 3, 4)]
 
+            # If selected item matches dictionary key, update dictionary with current status
             if self.res[0] == self.dataDisplay[key]:
                 templist = [self.objectx, self.objecty, filefont, filesize, filecolor]
                 self.sensorpollinfo.update({key: templist})
@@ -728,17 +790,20 @@ class GUI:
             if self.res[0] == self.dataDisplay[key]:
                 self.canvas.itemconfigure(self.dataDisplay[key], text=self.dataDict[key])
 
-
+        # Iterate through dictionary
         for key, value in self.labelinfo.items():
             filex, filey, filefont, filesize, filecolor, filetext = [value[i] for i in (0, 1, 2, 3, 4, 5)]
 
+            # If selected item matches dictionary key, update dictionary with current status
             if self.res[0] == self.label[key]:
                 templist = [self.objectx, self.objecty, filefont, filesize, filecolor, filetext]
                 self.labelinfo.update({key: templist})
 
+        # Save to file
         with open(f'{workingdir}\\Assets\\sensorpollconf.json', "w") as write_file:
             json.dump(self.sensorpollinfo, write_file)
 
+        # Save to file
         with open(f'{workingdir}\\Assets\\textlabelconf.json', "w") as write_file:
             json.dump(self.labelinfo, write_file)
 
