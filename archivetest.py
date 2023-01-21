@@ -142,33 +142,23 @@ pageStart = pageStarthi + pageStartlo
 pageStart = int(pageStart, 16)
 
 iterationCounter = (pageCount-1)*5 + (6-pageStart)
-print(pageCount, pageStart)
-print(iterationCounter)
-
-
 
 for i in range(0, pageCount-1):
     ser.flushInput()
     ser.flushOutput()
     ser.write(ack)
     hexData += bytes.hex(ser.read(267))
-    print("I'm doing something")
 
 dataString = ""
 for i in range(0, pageCount):
     dataString = dataString + hexData[(i*534)+2:((i+1)*534)-12]
 
-if pageStart == 1:
+#if pageStart == 1:
+if pageStart == 0:
     pass
 else:
     dataString = dataString[(pageStart-1)*104:]
 
-print(hexData)
-print(dataString)
-
-
-#datastring = "2c2e6400cf02d202cf020000000000000000bf02d202262f0000ffff0002000000c1ffffffffffffffff00ffffffffffffffffff2c2e8200c502d002c5020000000000000000be02d10226300000ffff0000000000c1ffffffffffffffff00ffffffffffffffffff2c2ec800cc02cc02c4020000000000000000bf02d60226300000ffff0002000000c1ffffffffffffffff00ffffffffffffffffff2c2ee600d502d502cc020000000000000000be02d802262f0000ffff0000000000c1ffffffffffffffff00ffffffffffffffffff2c2e2c01d602d602d4020000000000000000bf02d802262f0000ffff0002000000c1ffffffffffffffff00ffffffffffffffffff2c2e4a01d902d902d6020000000000000000be02d902262e0000ffff0000000000c1ffffffffffffffff00ffffffffffffffffff2c2e9001d802da02d8020000000000000000bf02da02262f0000ffff0002000000c1ffffffffffffffff00ffffffffffffffffff2c2eae01d802d802d6020000000000000000be02d902262f0000ffff0000000000c1ffffffffffffffff00ffffffffffffffffff2c2ef401d002d802d0020000000000000000bf02d602262f0000ffff0002000000c1ffffffffffffffff00ffffffffffffffffff2c2e1202cf02d002cc020000000000000000be02d60227300000ffff0000000000c1ffffffffffffffff00ffffffffffffffffff2c2e5802d502d602ce020000000000000000bf02d902272f0000ffff0002000000c1ffffffffffffffff00ffffffffffffffffff2c2e7602d802d802d5020000000000000000be02da02262f0000ffff0000000000c1ffffffffffffffff00ffffffffffffffffff2c2ebc02d902da02d8020000000000000000bf02db02262f0000ffff0002000000c1ffffffffffffffff00ffffffffffffffffff2c2ea406b202b202ae0200000000000000005f02d60226310000ffff0002000000c1ffffffffffffffff00ffffffffffffffffff2c2ec206b502b502b2020000000000000000b702d10226310000ffff0000000000c1ffffffffffffffff00ffffffffffffffffff2c2e0807b602b602b5020000000000000000be02cc0226310000ffff0002000000c1ffffffffffffffff00ffffffffffffffffff2c2e2607b702b702b6020000000000000000bf02c90226300000ffff0000000000c1ffffffffffffffff00ffffffffffffffffff2c2e6c07b602b702b6020000000000000000be02c80226300000ffff0002000000c1ffffffffffffffff00ffffffffffffffffff2c2e8a07b402b602b4020000000000000000bf02c80226300000ffff0000000000c1ffffffffffffffff00ffffffffffffffffff2c2ed007b402b502b3020000000000000000be02c90225300000ffff0002000000c1ffffffffffffffff00ffffffffffffffffff2c2eee07b402b502b3020000000000000000bf02c80225300000ffff0000000000c1ffffffffffffffff00ffffffffffffffffff2c2e3408b402b502b3020000000000000000be02c70225300000ffff0002000000c1ffffffffffffffff00ffffffffffffffffff2c2e5208b402b402b3020000000000000000be02cb0226310000ffff0000000000c1ffffffffffffffff00ffffffffffffffffff2c2e9808b502b502b4020000000000000000ba02d20226310000ffff0002000000c1ffffffffffffffff00ffffffffffffffffff2c2eb608b602b702b5020000000000000000bb02d9022631000a00000000000000c1ffffffffffffffff00ffffffffffffffffff2c2efc08b802b802b6020000000000000000bc02da0225310000ffff0002000000c1ffffffffffffffff00ffffffffffffffffff2c2e1a09b902b902b7020000000000000000bf02d20225300000ffff0000000000c1ffffffffffffffff00ffffffffffffffffff2d2e0000c202c202b8020000000000000000be02d30226300000ffff0002000000c1ffffffffffffffff00ffffffffffffffffff2d2e1e00d002d102c2020000000000000000bd02d602262e0000ffff0000000000c1ffffffffffffffff00ffffffffffffffffff2d2e6400d702d702d1020000000000000000bf02d802252e0000ffff0002000000c1ffffffffffffffff00ffffffffffffffffff2d2e8200d002d802cf020000000000000000be02d202262e0000ffff0000000000c1ffffffffffffffff00ffffffffffffffffff2d2ec800d402d402cf020000000000000000bf02d602252d0000ffff0002000000c1ffffffffffffffff00ffffffffffffffffff2d2ee600d802d802d4020000000000000000be02d802252d0000ffff0000000000c1ffffffffffffffff00ffffffffffffffffff2d2e2c01db02db02d7020000000000000000be02d902252d0000ffff0002000000c1ffffffffffffffff00ffffffffffffffffff2d2e4a01d902dc02d8020000000000000000bf02d802252d0000ffff0000000000c1ffffffffffffffff00ffffffffffffffffff2d2e9001da02da02d7020000000000000000be02d902252d0000ffff0002000000c1ffffffffffffffff00ffffffffffffffffff2d2eae01da02dc02da020000000000000000bf02d802252d0000ffff0000000000c1ffffffffffffffff00ffffffffffffffffff2d2ef401db02dc02da020000000000000000be02d902252d0000ffff0002000000c1ffffffffffffffff00ffffffffffffffffff2d2e1202d602dd02d5020000000000000000bf02d602252d0000ffff0000000000c1ffffffffffffffff00ffffffffffffffffff2d2e5802cf02d602ce020000000000000000be02d402252e0000ffff0002000000c1ffffffffffffffff00ffffffffffffffffff2d2e7602d002d002cd020000000000000000bf02d402262e0000ffff0000000000c1ffffffffffffffff00ffffffffffffffffff2d2ebc02d802d802d0020000000000000000be02d902252d0000ffff0002000000c1ffffffffffffffff00ffffffffffffffffff2d2eda02dc02dc02d8020000000000000000bf02db02252d0000ffff0000000000c1ffffffffffffffff00ffffffffffffffffff2d2e2003de02df02dc020000000000000000be02db02252d0000ffff0002000000c1ffffffffffffffff00ffffffffffffffffff2d2e3e03db02df02db020000000000000000bf02db02262e0000ffff0000000000c1ffffffffffffffff00ffffffffffffffffff2d2e8403db02dd02da020000000000000000be02d802262d0000ffff0002000000c1ffffffffffffffff00ffffffffffffffffff2d2ea203dc02dc02da020000000000000000be02db02252d0000ffff0000000000c1ffffffffffffffff00ffffffffffffffffff2d2ee803df02df02db020000000000000000bf02db02252c0000ffff0002000000c1ffffffffffffffff00ffffffffffffffffff2d2e0604df02e002de020000000000000000be02db02252c0000ffff0000000000c1ffffffffffffffff00ffffffffffffffffff2d2e4c04da02df02da020000000000000000bf02d702252d0000ffff0002000000c1ffffffffffffffff00ffffffffffffffffff2d2e6a04d102db02d1020000000000000000c002d602252d0000ffff0000000000c1ffffffffffffffff00ffffffffffffffffff2d2eb004c702d102c7020000000000000000bb02da02252e0000ffff0002000000c1ffffffffffffffff00ffffffffffffffffff2d2ece04c202c702c2020000000000000000b102dc02252f0000ffff0000000000c1ffffffffffffffff00ffffffffffffffffff2d2e1405c002c202bf020000000000000000bb02dd02242f0000ffff0002000000c1ffffffffffffffff00ffffffffffffffffff2d2e3205be02c002bd020000000000000000be02d502242e0000ffff0000000000c1ffffffffffffffff00ffffffffffffffffff2d2e7805bd02be02bd020000000000000000bf02d202242e0000ffff0002000000c1ffffffffffffffff00ffffffffffffffffff2d2e9605bc02bd02bc020000000000000000be02cf02242e0000ffff0000000000c1ffffffffffffffff00ffffffffffffffffff2d2edc05bb02bd02bb020000000000000000be02cd02242e0000ffff0002000000c1ffffffffffffffff00ffffffffffffffffff2d2efa05ba02bc02ba020000000000000000bc02d702252f0000ffff0000000000c1ffffffffffffffff00ffffffffffffffffff2d2e4006b902ba02b9020000000000000000bb02d402252f0000ffff0002000000c1ffffffffffffffff00ffffffffffffffffff2d2e5e06b902ba02b9020000000000000000bc02d702252f0000ffff0000000000c1ffffffffffffffff00ffffffffffffffffff2d2ea406ba02ba02b9020000000000000000bd02d902242f0000ffff0002000000c1ffffffffffffffff00ffffffffffffffffff2d2ec206b902ba02b9020000000000000000bc02da02252f0000ffff0000000000c1ffffffffffffffff00ffffffffffffffffff2d2e0807ba02ba02b9020000000000000000bf02e002242f0000ffff0002000000c1ffffffffffffffff00ffffffffffffffffff2d2e2607bb02bb02b9020000000000000000be02d602252f0000ffff0000000000c1ffffffffffffffff00ffffffffffffffffff2d2e6c07bb02bc02ba020000000000000000be02d202242e0000ffff0002000000c1ffffffffffffffff00ffffffffffffffffff2d2e8a07ba02bc02b9020000000000000000bf02d002232e0000ffff0000000000c1ffffffffffffffff00ffffffffffffffffff2d2ed007b902ba02b8020000000000000000bf02ce02232e0000ffff0002000000c1ffffffffffffffff00ffffffffffffffffff322e4006a602a60291020000000000000000a801cb021e25000804040002000000c1ffffffffffffffff00ffffffffffffffffff322e5e06b802b802a6020000000000000000b402d3021d240000ffff0000000000c1ffffffffffffffff00ffffffffffffffffff322ea406c302c302b80200000000000000009f02df021c240000ffff0002000000c1ffffffffffffffff00ffffffffffffffffff322e0807cd02cd02c90200000000000000009e01eb021c240000ffff0002000000c1ffffffffffffffff00ffffffffffffffffff322e2607d202d202cd020000000000000000b102ee021b230000ffff0000000000c1ffffffffffffffff00ffffffffffffffffff322e6c07d502d502d1020000000000000000a202eb021b230000ffff0002000000c1ffffffffffffffff00ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
-#iterationCounter = 78
 
 def read2bytefordatetime(dataindex):
     hi = dataString[dataindex + 2:dataindex + 4]
@@ -191,6 +181,46 @@ def read1byte(dataindex):
     returnval = str(int(returnval, 16))
     return returnval
 
+def WindDirection(DinoWind):
+
+    DinoWind = int(DinoWind)
+
+    if DinoWind == 0:
+        returnWindDir = 'N'
+    elif DinoWind == 1:
+        returnWindDir = 'NNE'
+    elif DinoWind == 2:
+        returnWindDir = 'NE'
+    elif DinoWind == 3:
+        returnWindDir = 'ENE'
+    elif DinoWind == 4:
+        returnWindDir = 'E'
+    elif DinoWind == 5:
+        returnWindDir = 'ESE'
+    elif DinoWind == 6:
+        returnWindDir = 'SE'
+    elif DinoWind == 7:
+        returnWindDir = 'SSE'
+    elif DinoWind == 8:
+        returnWindDir = 'S'
+    elif DinoWind == 9:
+        returnWindDir = 'SSW'
+    elif DinoWind == 10:
+        returnWindDir = 'SW'
+    elif DinoWind == 11:
+        returnWindDir = 'WSW'
+    elif DinoWind == 12:
+        returnWindDir = 'W'
+    elif DinoWind == 13:
+        returnWindDir = 'WNW'
+    elif DinoWind == 14:
+        returnWindDir = 'NW'
+    elif DinoWind == 15:
+        returnWindDir = 'NNW'
+    else:
+        returnWindDir = "Error"
+
+    return(returnWindDir)
 
 def oldarchive():
     dinosaur = {}
@@ -202,9 +232,24 @@ def oldarchive():
         DinoKey = ConvertDateTime(DinoTime, DinoDate)
         DinoOutTemp = read2byte(8+j)
         DinoOutTemp = DinoOutTemp[:-1] + '.' + DinoOutTemp[-1:]
+        DinoOutTempHigh = read2byte(12+j)
+        DinoOutTempHigh = DinoOutTempHigh[:-1] + '.' + DinoOutTempHigh[-1:]
+        DinoOutTempLow = read2byte(16 + j)
+        DinoOutTempLow = DinoOutTempLow[:-1] + '.' + DinoOutTempLow[-1:]
+        DinoRainfall = read2byte(20 + j)
+        DinoInTemp = read2byte(40 + j)
+        DinoInTemp = DinoInTemp[:-1] + '.' + DinoInTemp[-1:]
+        DinoInHum = read1byte(44 + j)
+        DinoOutHum = read1byte(46 + j)
+        DinoAvWindSpeed = read1byte(48 + j)
+        DinoHighWindSpeed = read1byte(50 + j)
+        DinoWind = read1byte(52 + j)
+        DinoDirHi = WindDirection(DinoWind)
+        DinoWind = read1byte(54 + j)
+        DinoPrevWind = WindDirection(DinoWind)
 
+        dinolist = [DinoOutTemp, DinoOutTempHigh, DinoOutTempLow, DinoRainfall, DinoInTemp, DinoInHum, DinoOutHum, DinoAvWindSpeed, DinoHighWindSpeed, DinoDirHi, DinoPrevWind]
 
-        dinolist = [DinoOutTemp]
         dinosaur.update({DinoKey: dinolist})
 
     print(dinosaur)
@@ -224,6 +269,8 @@ def ConvertDateTime(DinoTime, DinoDate):
     returnVal = f'{Month}/{Day}/{Year} {Hour}:{Minute}'
 
     return(returnVal)
+
+
 
 
 oldarchive()
