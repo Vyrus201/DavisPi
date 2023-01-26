@@ -1,6 +1,9 @@
 # Import the required libraries
 from tkinter import *
 from tkinter.ttk import *
+
+from tkcalendar import Calendar
+from ttkbootstrap import DateEntry
 from ttkbootstrap.constants import *
 from tkinter import filedialog
 from PIL import ImageTk, Image
@@ -9,7 +12,9 @@ import json
 import os
 import serialcompi
 
-# Create Class Instance
+#from tkcalendar import Calendar
+
+# Create Class Instances
 GetCurData = serialcompi.SerData()
 
 # Sync Time
@@ -86,6 +91,12 @@ class GUI:
             command=self.ExitProgram
         )
 
+        # Add a menu item to the menu
+        self.file_menu.add_command(
+            label='Create Graph',
+            command=self.CreateGraph
+        )
+
         # Add the file menu to the menubar
         self.menubar.add_cascade(
             label="File",
@@ -146,6 +157,86 @@ class GUI:
     # Exit
     def ExitProgram(self):
         exit()
+
+    def CreateGraph(self):
+
+        def savearcstate():
+            startselect = startcal.entry.get()
+            endselect = endcal.entry.get()
+            arcselect = radioSelection.get()
+            self.win.destroy()
+
+            firstslash = startselect.find("/")
+            secondslash = startselect.find("/", startselect.find("/") + 1)
+            startmonth = startselect[:firstslash]
+            startday = startselect[firstslash+1:secondslash]
+            startyear = startselect[secondslash+3:]
+
+
+            firstslash = endselect.find("/")
+            secondslash = endselect.find("/", endselect.find("/") + 1)
+            endmonth = endselect[:firstslash]
+            endday = endselect[firstslash+1:secondslash]
+            endyear = endselect[secondslash+3:]
+
+            startminute = 0
+            endminute = 30
+
+            starthour = 0
+            endhour = 23
+
+
+            ArcGraph = serialcompi.graphArchiveData(GetCurData, startday, startmonth, startyear, starthour,
+            startminute, endday, endmonth, endyear, endhour, endminute)
+            ArcGraph.createGraph(arcselect)
+
+
+        # Open new window
+        creategraphwin = Toplevel(self.win)
+        creategraphwin.iconbitmap(f'{workingdir}\\Assets\\icon.ico')
+        creategraphwin.title("Select Time Range and Sensor to Graph")
+        creategraphwin.geometry('475x400')
+
+        radioSelection = StringVar(creategraphwin, "ArcOutTemp")
+
+
+        l0 = Label(creategraphwin, text='')
+        l0.grid(row=1, column=0, sticky='W', ipady=5, ipadx=5)
+        l1 = Labelframe(creategraphwin, text='Select Date Ranges')
+        l1.grid(row=1, column=1, sticky='W', ipady=5, ipadx=5)
+        l2 = Label(l1, text="Choose Beginning Archive Date")
+        l2.grid(row=2, column=1, sticky='W', ipady=5, ipadx=5)
+        startcal = DateEntry(l1)
+        startcal.grid(row=3, column=1, sticky='W', ipady=5, ipadx=5)
+        l3 = Label(l1, text="Choose Ending Archive Date")
+        l3.grid(row=4, column=1, sticky='W', ipady=5, ipadx=5)
+        endcal = DateEntry(l1)
+        endcal.grid(row=5, column=1, sticky='W', ipady=5, ipadx=5)
+
+        # Add Save Button
+        savebutton = Button(creategraphwin, text="Graph!", command=savearcstate)
+        savebutton.grid(row=12, column=2, sticky='W', ipady=5, ipadx=5)
+
+        l4 = Labelframe(creategraphwin, text='Select Date Ranges')
+        l4.grid(row=1, column=3, sticky='W', ipady=5, ipadx=5)
+
+        values = {"Outdoor Temperature": "ArcOutTemp",
+                  "High Outdoor Temperature": "ArcOutTempHigh",
+                  "Low Outdoor Temperature": "ArcOutTempLow",
+                  "Rainfall": "ArcRainfall",
+                  "Indoor Temperature": "ArcInTemp",
+                  "Indoor Humidity": "ArcInHum",
+                  "Outdoor Humidity": "ArcOutHum",
+                  "Average Wind Speed": "ArcAvWindSpeed",
+                  "High Wind Speed": "ArcHighWindSpeed",
+                  "High Wind Direction": "ArcDirHi",
+                  "Prevailing Wind Direction": "ArcPrevWind"}
+
+        i = 0
+        for (text, value) in values.items():
+            Radiobutton(l4, text=text, variable=radioSelection,
+                        value=value).grid(row=i, column=3, sticky='W', ipady=5, ipadx=5)
+            i = i + 1
 
     # Prompt for new background
     def ChangeBackground(self):
@@ -853,10 +944,10 @@ canvas = Canvas(splash_root, width=400, height=400)
 canvas.pack(fill=BOTH, expand=True)
 
 # Add image to canvas
-canvas.create_image(0,0, image=image2, anchor='nw')
+canvas.create_image(0, 0, image=image2, anchor='nw')
 
 # After x amount of milliseconds, create instance of GUI class (which destroys splashscreen)
-splash_root.after(3000, GUI)
+splash_root.after(30, GUI)
 
 
 mainloop()
