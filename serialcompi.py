@@ -1,5 +1,3 @@
-# TODO: Determine which serial commands respond with <ACK> (0x06) and write code to WAIT for the ACK before reading data/continuing
-
 # Import necessary libraries
 import serial
 import datetime
@@ -507,11 +505,9 @@ class graphArchiveData(SerData):
                 pass
             elif int(self.Minute) > self.endminute:
                 pass
-            # ToDo: Add in hour and minute
+
             else:
                 self.archiveDict.update({Key: datalist})
-
-        print(self.archiveDict)
 
     def ConvertDateTime(self, Time, Date):
         self.Year = str((int(Date, 16)) >> 9)
@@ -520,9 +516,15 @@ class graphArchiveData(SerData):
 
         Time = int(Time, 16)
         self.Hour = int(int(Time) / 100)
-        if self.Hour > 12:
-            NewHour = self.Hour - 12
+        if self.Hour >= 12:
+            if self.Hour > 12:
+                NewHour = self.Hour - 12
+            else:
+                NewHour = self.Hour
             AMPM = 'PM'
+        elif self.Hour == 0:
+            NewHour = 12
+            AMPM = 'AM'
         else:
             NewHour = self.Hour
             AMPM = 'AM'
@@ -666,6 +668,22 @@ class graphArchiveData(SerData):
 
         if arcselect == "ArcOutTemp":
             plt.plot(xouttemp, youttemp, label='Outdoor Temperature')
+
+            xticks = len(xouttemp)
+            mod = int(xticks/25)
+            if mod == 0:
+                mod = 1
+
+            labels = []
+
+            for i in range(len(xouttemp)):
+                if i % mod == 0:
+                    labels.append(xouttemp[i])
+                else:
+                    labels.append("")
+
+            plt.xticks(ticks=xouttemp, labels=labels)
+
             plt.ylabel('Degrees (\u00b0F)')
             plt.title('Outdoor Temperature')
         elif arcselect == "ArcOutTempHigh":
@@ -701,15 +719,15 @@ class graphArchiveData(SerData):
             plt.ylabel('MPH')
             plt.title('High Wind Speed')
         elif arcselect == "ArcDirHi":
-            plt.plot(xwinddirhi, ywinddirhi, label='High Wind Direction')
+            plt.scatter(xwinddirhi, ywinddirhi, label='High Wind Direction')
             plt.ylabel('Direction')
             plt.title('High Wind Direction')
         elif arcselect == "ArcPrevWind":
-            plt.plot(xprevwind, yprevwind, label='Prevailing Wind Direction')
+            plt.scatter(xprevwind, yprevwind, label='Prevailing Wind Direction')
             plt.ylabel('Direction')
             plt.title('Prevailing Wind Direction')
 
-        plt.xticks(fontsize=8, rotation=90)
+        plt.xticks(fontsize=8, rotation=60)
         plt.subplots_adjust(bottom=0.26)
 
         fig = plt.gcf()
@@ -717,4 +735,5 @@ class graphArchiveData(SerData):
 
         plt.xlabel('Date and Time')
 
+    def show_Graph(self):
         plt.show()

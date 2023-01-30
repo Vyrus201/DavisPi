@@ -2,7 +2,6 @@
 from tkinter import *
 from tkinter.ttk import *
 
-from tkcalendar import Calendar
 from ttkbootstrap import DateEntry
 from ttkbootstrap.constants import *
 from tkinter import filedialog
@@ -11,8 +10,10 @@ import datetime
 import json
 import os
 import serialcompi
-
-#from tkcalendar import Calendar
+from cryptography.fernet import Fernet
+from ftplib import FTP
+from threading import Thread
+from FTPConnect import SendFTP
 
 # Create Class Instances
 GetCurData = serialcompi.SerData()
@@ -30,7 +31,10 @@ class GUI:
     def __init__(self):
 
         # Destroy splashscreen
-        splash_root.destroy()
+        try:
+            splash_root.destroy()
+        except:
+            pass
 
         # Open file and read background path
         with open(f'{workingdir}\\Assets\\backgroundconf.json', "r") as read_file:
@@ -91,12 +95,6 @@ class GUI:
             command=self.ExitProgram
         )
 
-        # Add a menu item to the menu
-        self.file_menu.add_command(
-            label='Create Graph',
-            command=self.CreateGraph
-        )
-
         # Add the file menu to the menubar
         self.menubar.add_cascade(
             label="File",
@@ -136,6 +134,35 @@ class GUI:
             menu=self.settings_menu
         )
 
+        # Create a menu
+        self.graph_menu = Menu(self.menubar, tearoff=False)
+
+        # Add a menu item to the menu
+        self.graph_menu.add_command(
+            label='Create Graph',
+            command=self.CreateGraph
+        )
+
+        # Add the settings menu to the menubar
+        self.menubar.add_cascade(
+            label="Graph",
+            menu=self.graph_menu
+        )
+
+        # Create a menu
+        self.ftp_menu = Menu(self.menubar, tearoff=False)
+
+        # Add a menu item to the menu
+        self.ftp_menu.add_command(
+            label='Configure FTP',
+            command=self.ConfigFTP
+        )
+
+        # Add the settings menu to the menubar
+        self.menubar.add_cascade(
+            label="FTP",
+            menu=self.ftp_menu
+        )
 
         # Event Binds
         self.win.bind("<F11>", self.enableFullscreen)
@@ -164,7 +191,7 @@ class GUI:
             startselect = startcal.entry.get()
             endselect = endcal.entry.get()
             arcselect = radioSelection.get()
-            self.win.destroy()
+            creategraphwin.destroy()
 
             firstslash = startselect.find("/")
             secondslash = startselect.find("/", startselect.find("/") + 1)
@@ -189,6 +216,8 @@ class GUI:
             ArcGraph = serialcompi.graphArchiveData(GetCurData, startday, startmonth, startyear, starthour,
             startminute, endday, endmonth, endyear, endhour, endminute)
             ArcGraph.createGraph(arcselect)
+            self.close_GUI()
+            ArcGraph.show_Graph()
 
 
         # Open new window
@@ -213,11 +242,7 @@ class GUI:
         endcal = DateEntry(l1)
         endcal.grid(row=5, column=1, sticky='W', ipady=5, ipadx=5)
 
-        # Add Save Button
-        savebutton = Button(creategraphwin, text="Graph!", command=savearcstate)
-        savebutton.grid(row=12, column=2, sticky='W', ipady=5, ipadx=5)
-
-        l4 = Labelframe(creategraphwin, text='Select Date Ranges')
+        l4 = Labelframe(creategraphwin, text='Select Sensor to Graph')
         l4.grid(row=1, column=3, sticky='W', ipady=5, ipadx=5)
 
         values = {"Outdoor Temperature": "ArcOutTemp",
@@ -237,6 +262,217 @@ class GUI:
             Radiobutton(l4, text=text, variable=radioSelection,
                         value=value).grid(row=i, column=3, sticky='W', ipady=5, ipadx=5)
             i = i + 1
+
+        lspacer = Label(creategraphwin, text='')
+        lspacer.grid(row=11, column=2)
+
+        # Add Save Button
+        savebutton = Button(creategraphwin, text="Graph!", command=savearcstate)
+        savebutton.grid(row=12, column=2, sticky='W', ipady=5, ipadx=5)
+
+    def ConfigFTP(self):
+
+        templist = []
+
+        # Update list with each selection
+        def get_selection():
+            if (selcurintemp.get() == 1):
+                templist.append('curintemp')
+            if (selcurinhum.get() == 1):
+                templist.append('curinhum')
+            if (selcurouttemp.get() == 1):
+                templist.append('curouttemp')
+            if (selcurwinspeed.get() == 1):
+                templist.append('curwinspeed')
+            if (selcurwindir.get() == 1):
+                templist.append('curwindir')
+            if (selcurouthum.get() == 1):
+                templist.append('curouthum')
+            if (selcurdailrain.get() == 1):
+                templist.append('curdailrain')
+            if (selcurraterain.get() == 1):
+                templist.append('curraterain')
+
+            if (selhiwinspeed.get() == 1):
+                templist.append('hiwinspeed')
+            if (selhiintemp.get() == 1):
+                templist.append('hiintemp')
+            if (sellointemp.get() == 1):
+                templist.append('lointemp')
+            if (selhiinhum.get() == 1):
+                templist.append('hiinhum')
+            if (selloinhum.get() == 1):
+                templist.append('loinhum')
+            if (selhiouttemp.get() == 1):
+                templist.append('hiouttemp')
+            if (selloouttemp.get() == 1):
+                templist.append('loouttemp')
+
+        # Save selections to file
+        def save():
+
+            retserver = FTPServerEntry.get()
+            retusername = UsernameEntry.get()
+            retpassword = PasswordEntry.get()
+            retport = PortEntry.get()
+
+            ftpList = []
+
+            # Generate new encryption key
+            self.key = Fernet.generate_key()
+            self.fernet = Fernet(self.key)
+
+            ftpList.append(retserver)
+            ftpList.append(retusername)
+            ftpList.append(retpassword)
+            if not retport:
+                retport = '21'
+                ftpList.append(retport)
+            else:
+                ftpList.append(retport)
+
+            # Encrypt dictionary and save to file
+            enclist = str(ftpList)
+            enclist = self.fernet.encrypt(enclist.encode()).decode()
+            with open(f'{workingdir}\\Assets\\FTPCred.json', "w") as write_file:
+                json.dump(enclist, write_file)
+
+            # Decode key and save to file
+            self.key = self.key.decode()
+            with open(f'{workingdir}\\Assets\\key.json', "w") as write_file:
+                json.dump(self.key, write_file)
+
+            # Clear list
+            self.ftpinfo = {}
+
+            # Clear out any repeated selections
+            for i in templist:
+                if i not in self.ftpinfo:
+                    self.ftpinfo.update({i: ['placeholder']})
+
+            # Save to file
+            with open(f'{workingdir}\\Assets\\ftpsensorconf.json', "w") as write_file:
+                json.dump(self.ftpinfo, write_file)
+
+            # Create FTP instance
+            ftp = FTP()
+
+            # Connect to and log in to FTP server according to saved information
+            try:
+                ftp.connect(retserver, int(retport))
+                ftp.login(retusername, retpassword)
+
+                # Close window
+                configFTPwin.destroy()
+
+                FTPThread = Thread(target = SendFTP)
+                FTPThread.start()
+            except:
+                def tryagain():
+                    FTPErrorwin.destroy()
+
+                # Open new window
+                FTPErrorwin = Toplevel(configFTPwin)
+                FTPErrorwin.iconbitmap(f'{workingdir}\\Assets\\icon.ico')
+                FTPErrorwin.title("Error")
+                FTPErrorwin.geometry('150x100')
+
+                l = Label(FTPErrorwin, text='Invalid FTP configuration')
+                l.place(relx=.5, rely=.25, anchor=CENTER)
+                exitbutton = Button(FTPErrorwin, text="Okay", command=tryagain)
+                exitbutton.place(relx=.5, rely=.75, anchor=CENTER)
+
+
+        # Open new window
+        configFTPwin = Toplevel(self.win)
+        configFTPwin.iconbitmap(f'{workingdir}\\Assets\\icon.ico')
+        configFTPwin.title("Configure FTP settings")
+        configFTPwin.geometry('625x560')
+
+        # Initialize each variable
+        selcurintemp = IntVar()
+        selcurinhum = IntVar()
+        selcurouttemp = IntVar()
+        selcurwinspeed = IntVar()
+        selcurwindir = IntVar()
+        selcurouthum = IntVar()
+        selcurdailrain = IntVar()
+        selcurraterain = IntVar()
+
+        selhiwinspeed = IntVar()
+        selhiintemp = IntVar()
+        sellointemp = IntVar()
+        selhiinhum = IntVar()
+        selloinhum = IntVar()
+        selhiouttemp = IntVar()
+        selloouttemp = IntVar()
+
+        # Create check boxes
+        l0 = Label(configFTPwin, text='')
+        l0.grid(row=1, column=0, sticky='W', ipady=5, ipadx=5)
+        l1 = Labelframe(configFTPwin, text='Current Sensor Values')
+        l1.grid(row=1, column=1, sticky='W', ipady=5, ipadx=5)
+        c1 = Checkbutton(l1, text='Current Indoor Temp', variable=selcurintemp, onvalue=1, offvalue=0, command=get_selection)
+        c1.grid(row=2, column=1, ipadx=5, ipady=5, sticky='W')
+        c2 = Checkbutton(l1, text='Current Indoor Humidity', variable=selcurinhum, onvalue=1, offvalue=0, command=get_selection)
+        c2.grid(row=3, column=1, ipadx=5, ipady=5, sticky='W')
+        c3 = Checkbutton(l1, text='Current Outdoor Temp', variable=selcurouttemp, onvalue=1, offvalue=0, command=get_selection)
+        c3.grid(row=4, column=1, ipadx=5, ipady=5, sticky='W')
+        c4 = Checkbutton(l1, text='Current Wind Speed', variable=selcurwinspeed, onvalue=1, offvalue=0, command=get_selection)
+        c4.grid(row=5, column=1, ipadx=5, ipady=5, sticky='W')
+        c5 = Checkbutton(l1, text='Current Wind Direction', variable=selcurwindir, onvalue=1, offvalue=0, command=get_selection)
+        c5.grid(row=6, column=1, ipadx=5, ipady=5, sticky='W')
+        c6 = Checkbutton(l1, text='Current Outdoor Humidity', variable=selcurouthum, onvalue=1, offvalue=0, command=get_selection)
+        c6.grid(row=7, column=1, ipadx=5, ipady=5, sticky='W')
+        c7 = Checkbutton(l1, text='Current Daily Rain', variable=selcurdailrain, onvalue=1, offvalue=0, command=get_selection)
+        c7.grid(row=8, column=1, ipadx=5, ipady=5, sticky='W')
+        c8 = Checkbutton(l1, text='Current Rain Rate', variable=selcurraterain, onvalue=1, offvalue=0, command=get_selection)
+        c8.grid(row=9, column=1, ipadx=5, ipady=5, sticky='W')
+
+        l2 = Labelframe(configFTPwin, text='High/Low Sensor Values')
+        l2.grid(row=1, column=3, sticky='W', ipady=5, ipadx=5)
+        c9 = Checkbutton(l2, text='Daily Peak Wind Speed', variable=selhiwinspeed, onvalue=1, offvalue=0, command=get_selection)
+        c9.grid(row=2, column=3, ipadx=5, ipady=5, sticky='W')
+        c10 = Checkbutton(l2, text='High Indoor Daily Temp', variable=selhiintemp, onvalue=1, offvalue=0, command=get_selection)
+        c10.grid(row=3, column=3, ipadx=5, ipady=5, sticky='W')
+        c11 = Checkbutton(l2, text='Low Indoor Daily Temp', variable=sellointemp, onvalue=1, offvalue=0, command=get_selection)
+        c11.grid(row=4, column=3, ipadx=5, ipady=5, sticky='W')
+        c12 = Checkbutton(l2, text='High Indoor Daily Humidity', variable=selhiinhum, onvalue=1, offvalue=0, command=get_selection)
+        c12.grid(row=5, column=3, ipadx=5, ipady=5, sticky='W')
+        c13 = Checkbutton(l2, text='Low Indoor Daily Humidity', variable=selloinhum, onvalue=1, offvalue=0, command=get_selection)
+        c13.grid(row=6, column=3, ipadx=5, ipady=5, sticky='W')
+        c14 = Checkbutton(l2, text='High Outdoor Daily Temperature', variable=selhiouttemp, onvalue=1, offvalue=0, command=get_selection)
+        c14.grid(row=7, column=3, ipadx=5, ipady=5, sticky='W')
+        c15 = Checkbutton(l2, text='Low Outdoor Daily Temperature', variable=selloouttemp, onvalue=1, offvalue=0, command=get_selection)
+        c15.grid(row=8, column=3, ipadx=5, ipady=5, sticky='W')
+        l16 = Label(l2, text='')
+        l16.grid(row=9, column=3, ipadx=5, ipady=5, sticky='W')
+
+        l3 = Labelframe(configFTPwin, text='FTP Connection Settings')
+        l3.grid(row=2, column=2, sticky='N', ipady=5, ipadx=0)
+        l7 = Label(l3, text='')
+        l7.grid(row=1, column=0)
+        l4 = Label(l3, text='FTP Server')
+        l4.grid(row=1, column=1, sticky='N', ipady=5, ipadx=5)
+        FTPServerEntry = Entry(l3)
+        FTPServerEntry.grid(row=2, column=1, sticky='N')
+        l5 = Label(l3, text='Username')
+        l5.grid(row=3, column=1, sticky='N', ipady=5, ipadx=5)
+        UsernameEntry = Entry(l3)
+        UsernameEntry.grid(row=4, column=1, sticky='N')
+        l6 = Label(l3, text='Password')
+        l6.grid(row=5, column=1, sticky='N', ipady=5, ipadx=5)
+        PasswordEntry = Entry(l3)
+        PasswordEntry.grid(row=6, column=1, sticky='N')
+        l8 = Label(l3, text='Port (Leave blank for default of 21)')
+        l8.grid(row=7, column=1, sticky='N', ipady=5, ipadx=5)
+        PortEntry = Entry(l3)
+        PortEntry.grid(row=8, column=1, sticky='N')
+
+        spacer = Label(configFTPwin, text="")
+        spacer.grid(row=10, column=2)
+        saveandexit_button = Button(configFTPwin, text="Save", command=save)
+        saveandexit_button.grid(row=11, column=2, columnspan=1)
 
     # Prompt for new background
     def ChangeBackground(self):
@@ -787,7 +1023,7 @@ class GUI:
                 self.dataDisplay[key] = self.canvas.create_text(x + i, y, text=sensorname, tags="sensor", font=(font, size), fill=color)
                 i = i + 130
 
-        # After 1 second, update sensors
+        # After 10 seconds, update sensors
         self.afterid = self.win.after(10000, self.updateSensorData)
 
     def spawnLabels(self):
@@ -907,7 +1143,7 @@ class GUI:
         self.canvas.bind("<B1-Motion>", cmd)
 
     # Use the mouse coordinates as the new location for the canvas item
-    def relocate (self, id):
+    def relocate(self, id):
         x0, y0 = self.canvas.winfo_pointerxy()
         x0 -= self.canvas.winfo_rootx()
         y0 -= self.canvas.winfo_rooty()
@@ -916,6 +1152,9 @@ class GUI:
         self.objecty = y0
 
         self.canvas.coords(id, x0, y0,)
+
+    def close_GUI(self):
+        self.win.destroy()
 
 # Create splash screen
 splash_root = Tk()
