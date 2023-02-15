@@ -1,13 +1,15 @@
-from ftplib import FTP
+from ftplib import *
 import json
 from cryptography.fernet import Fernet
 import ast
 import os
 import datetime
 import time
+from sys import exit
+
 
 class SendFTP:
-    def __init__(self):
+    def __init__(self, ThreadStatus, FileStatus):
         workingdir = os.getcwd()
 
         # Open password file and read file contents into dictionary (Currently encrypted, and not separated into individual values)
@@ -17,6 +19,10 @@ class SendFTP:
         # Open key file and read contents into variable
         with open(f'{workingdir}\\Assets\\key.json', "r") as read_file:
             self.key = json.load(read_file)
+
+        # Read file
+        with open(f'{workingdir}\\Assets\\ftpsensorconf.json', "r") as read_file:
+            self.ftpsensorconfig = json.load(read_file)
 
         # Generate decryption key
         self.fernet = Fernet(self.key)
@@ -31,29 +37,82 @@ class SendFTP:
         self.username = self.currentlist[1]
         self.password = self.currentlist[2]
         self.port = self.currentlist[3]
+        self.frequency = self.currentlist[4]
+        self.filename = self.currentlist[5]
 
-        while True:
-            initialtime = datetime.datetime.now()
+        # Make sure that FTP configuration file contents were valid
+        try:
             # Create FTP instance
             ftp = FTP()
 
-            # Connect to and log in to FTP server according to saved information
             ftp.connect(self.ftp_server, int(self.port))
             ftp.login(self.username, self.password)
+            ftp.close()
+        except:
+            fileout = open(f'{workingdir}\\ErrorLog.txt', "a")
+            fileout.write(f'{datetime.datetime.now()}: Unable to establish FTP connection. Re-enter FTP configuration\n')
+            fileout.close()
+            exit()
 
-            # Sample FTP command. Lists folder contents
-            print(ftp.nlst())
+        counter = 0
 
-            # Attempts to gracefully terminate FTP connection. If error, connection is forcefully closed and an event is written to the event log
-            try:
-                ftp.quit()
-            except:
-                fileout = open(f'{self.workingdir}\\ErrorLog.txt', "a")
-                fileout.write(
-                    f'{datetime.datetime.now()}: Unable to gracefully close connection to FTP server "{self.ftp_server}". FTP connection will now close forcefully.\n')
-                fileout.close()
-                ftp.close()
+        while True:
+            now = time.localtime().tm_sec
+            while now > 0:
+                now = time.localtime().tm_sec
+                if ThreadStatus.is_set():
+                    exit()
 
-            time.sleep(5)
+            counter = counter + 1
+            if counter == self.frequency:
+                counter = 0
 
+                while FileStatus.is_set():
+                    print('this is set')
 
+                # Read file
+                with open(f'{workingdir}\\Assets\\FTPData.json', "r") as read_file:
+                    self.FTPData = json.load(read_file)
+
+                keys = []
+                values = []
+
+                for key, value in self.FTPData.items():
+                    if key in self.ftpsensorconfig:
+                        keys.append(key)
+                        values.append(value)
+
+                try:
+                    with open(f'{workingdir}\\Assets\\{self.filename}.csv', 'w') as csvfile:
+                        for i in keys:
+                            csvfile.write(f'{i},')
+                        csvfile.write("\n")
+                        for i in values:
+                            csvfile.write(f'{i},')
+
+                    ftp = FTP()
+
+                    # Connect to and log in to FTP server according to saved information
+                    ftp.connect(self.ftp_server, int(self.port))
+                    ftp.login(self.username, self.password)
+
+                    with open(f'{workingdir}\\Assets\\{self.filename}.csv', "rb") as file:
+                        ftp.storbinary(f'STOR WXTremeFTP.csv', file)
+                    print('store')
+
+                    # Attempts to gracefully terminate FTP connection. If error, connection is forcefully closed and an event is written to the event log
+                    try:
+                        ftp.quit()
+                    except:
+                        fileout = open(f'{self.workingdir}\\ErrorLog.txt', "a")
+                        fileout.write(
+                            f'{datetime.datetime.now()}: Unable to gracefully close connection to FTP server "{self.ftp_server}". FTP connection will now close forcefully.\n')
+                        fileout.close()
+                        ftp.close()
+
+                except PermissionError:
+                    print('permission error')
+                    pass
+
+            # Prevent program from looping several times when seconds = 0
+            time.sleep(1)

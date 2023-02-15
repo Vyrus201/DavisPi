@@ -8,6 +8,10 @@ from tkinter.ttk import *
 import os
 import json
 import matplotlib.pyplot as plt
+import matplotlib
+matplotlib.use('TkAgg')
+
+from sys import exit
 
 crcarray = arr.array('i', [0x0, 0x1021, 0x2042, 0x3063, 0x4084, 0x50a5, 0x60c6, 0x70e7,
 0x8108, 0x9129, 0xa14a, 0xb16b, 0xc18c, 0xd1ad, 0xe1ce, 0xf1ef,
@@ -102,6 +106,9 @@ class SerData:
                 # Destroy sub-window
                 comwin.destroy()
 
+            def exitprogram():
+                exit()
+
             # Set default option
             self.COMPort = "COM3"
 
@@ -122,7 +129,10 @@ class SerData:
             comoption.place(relx=.5, rely=.33, anchor="center")
 
             saveandexit_button = Button(comwin, text="Save", command=saveandexit)
-            saveandexit_button.place(relx=.5, rely=.66, anchor="center")
+            saveandexit_button.place(relx=.25, rely=.66, anchor="center")
+
+            exit_button = Button(comwin, text="Exit", command=exitprogram)
+            exit_button.place(relx=.75, rely=.66, anchor="center")
 
             # Get COM selection
             def change_com_dropdown(*args):
@@ -300,6 +310,13 @@ class SerData:
         curval = str(int(curval, 16))
         return curval
 
+    def setArchiveInt(self):
+        # Send Archive Interval
+        time.sleep(1.5)
+        self.ser.flushInput()
+        self.ser.flushOutput()
+        self.ser.write(str.encode("SETPER 60\n"))
+
     def updateTime(self):
 
         # Initialize Array
@@ -335,9 +352,8 @@ class SerData:
         self.ser.flushInput()
         self.ser.flushOutput()
         self.ser.write(str.encode("SETTIME\n"))
-        time.sleep(.50)
+        time.sleep(.5)
         self.ser.write(crcbytearray)
-
 
 
 class graphArchiveData(SerData):
@@ -405,9 +421,13 @@ class graphArchiveData(SerData):
         discard = str(bytes.hex(instance.ser.read(1)))
         print(discard)
 
+        time.sleep(.1)
+
         instance.ser.flushInput()
         instance.ser.flushOutput()
         instance.ser.write(databytearray)
+
+        time.sleep(.1)
 
         instance.ser.flushInput()
         instance.ser.flushOutput()
@@ -418,11 +438,16 @@ class graphArchiveData(SerData):
         discard = str(bytes.hex(instance.ser.read(1)))
         print(discard)
 
+        time.sleep(.1)
+
         pageInfo = str(bytes.hex(instance.ser.read(4)))
         instance.ser.flushInput()
         instance.ser.flushOutput()
         ack = 6
         ack = bytearray([ack])
+
+        time.sleep(.25)
+
         instance.ser.write(ack)
         hexData = str(bytes.hex(instance.ser.read(267)))
 
@@ -437,6 +462,9 @@ class graphArchiveData(SerData):
         pageStart = int(pageStart, 16)
 
         iterationCounter = (pageCount - 1) * 5 + (5 - pageStart)
+
+
+        ##################################################
 
         for i in range(0, pageCount - 1):
             instance.ser.flushInput()
@@ -455,8 +483,113 @@ class graphArchiveData(SerData):
 
         self.decodeArchive(iterationCounter)
 
+    def preloadArchive(self):
+        startmonth = int(self.startmonth)
+        startday = int(self.startday)
+        startyear = int(self.startyear)
+        endmonth = int(self.endmonth)
+        endday = int(self.endday)
+        endyear = int(self.endyear)
+
+        startmonth1 = startmonth
+        startday1 = startday
+
+        if startmonth < 10:
+            startmonth1 = '0' + str(startmonth)
+        else:
+            startmonth1 = startmonth
+        if startday < 10:
+            startday1 = '0' + str(startday)
+        else:
+            startday1 = startday
+
+        if endmonth < 10:
+            endmonth = '0' + str(endmonth)
+        if endday < 10:
+            endday = '0' + str(endday)
+
+        startcompare = int(str(startyear) + str(startmonth1) + str(startday1))
+        endcompare = int(str(endyear) + str(endmonth) + str(endday))
+
+        date1 = datetime.datetime(day=int(startday), month=int(startmonth), year=2000 + int(startyear))
+        date2 = datetime.datetime(day=int(endday), month=int(endmonth), year=2000 + int(endyear))
+
+        self.timedifference = (date2 - date1).days
+
+        while startcompare <= endcompare:
+            i = 0
+            while i < 24:
+                if i == 0:
+                    dtime = str(startmonth) + '/' + str(startday) + '/' + str(startyear) + ' ' + str(12) + ':00 AM'
+                elif i == 12:
+                    dtime = str(startmonth) + '/' + str(startday) + '/' + str(startyear) + ' ' + str(12) + ':00 PM'
+                elif i < 13:
+                    dtime = str(startmonth) + '/' + str(startday) + '/' + str(startyear) + ' ' + str(i) + ':00 AM'
+                else:
+                    dtime = str(startmonth) + '/' + str(startday) + '/' + str(startyear) + ' ' + str(i - 12) + ':00 PM'
+                self.archiveDict.update(
+                    {dtime: ['nan', 'nan', 'nan', 'nan', 'nan', 'nan', 'nan', 'nan', 'nan', 'nan', 'nan']})
+                i = i + 1
+
+            # Check current month
+            if int(startmonth) == 2:
+                if int(startday) == 28:
+                    startmonth = int(startmonth) + 1
+                    startmonth1 = int(startmonth1) + 1
+                    startday = 1
+                    startday1 = 1
+                else:
+                    startday = int(startday) + 1
+                    startday1 = int(startday1) + 1
+
+            elif int(startmonth) == 4 or int(startmonth) == 6 or int(startmonth) == 9 or int(startmonth) == 11:
+                if int(startday) == 30:
+                    startmonth = int(startmonth) + 1
+                    startmonth1 = int(startmonth1) + 1
+                    startday = 1
+                    startday1 = 1
+                else:
+                    startday = int(startday) + 1
+                    startday1 = int(startday1) + 1
+
+            elif int(startmonth) == 1 or int(startmonth) == 3 or int(startmonth) == 5 or int(startmonth) == 7 or int(
+                    startmonth) == 8 or int(startmonth) == 10:
+                if int(startday) == 31:
+                    startmonth = int(startmonth) + 1
+                    startmonth1 = int(startmonth1) + 1
+                    startday = 1
+                    startday1 = 1
+                else:
+                    startday = int(startday) + 1
+                    startday1 = int(startday1) + 1
+
+            elif int(startmonth) == 12:
+                if int(startday) == 31:
+                    startyear = int(startyear + 1)
+                    startmonth = 1
+                    startmonth1 = 1
+                    startday = 1
+                    startday1 = 1
+                else:
+                    startday = int(startday) + 1
+                    startday1 = int(startday1) + 1
+
+            if int(startmonth) < 10:
+                startmonth1 = '0' + str(startmonth)
+            if int(startday) < 10:
+                startday1 = '0' + str(startday)
+
+            if int(endmonth) < 10:
+                endmonth = '0' + str(endmonth)
+            if int(endday) < 10:
+                endday = '0' + str(endday)
+
+            startcompare = int(str(startyear) + str(startmonth1) + str(startday1))
+
     def decodeArchive(self, iterationCounter):
         self.archiveDict = {}
+
+        self.preloadArchive()
 
         for i in range(0, iterationCounter):
             j = i * 104
@@ -484,30 +617,31 @@ class graphArchiveData(SerData):
             datalist = [ArcOutTemp, ArcOutTempHigh, ArcOutTempLow, ArcRainfall, ArcInTemp, ArcInHum, ArcOutHum,
                         ArcAvWindSpeed, ArcHighWindSpeed, ArcDirHi, ArcPrevWind]
 
-            if self.Year < self.startyear:
+            if int(self.Year) < int(self.startyear):
                 pass
-            elif self.Month < self.startmonth:
+            elif int(self.Month) < int(self.startmonth):
                 pass
-            elif self.Day < self.startday:
+            elif int(self.Day) < int(self.startday):
                 pass
-            elif self.Hour < self.starthour:
+            elif int(self.Hour) < int(self.starthour):
                 pass
             elif int(self.Minute) < self.startminute:
                 pass
 
-            elif self.Year > self.endyear:
+            elif int(self.Year) > int(self.endyear):
                 pass
-            elif self.Month > self.endmonth:
+            elif int(self.Month) > int(self.endmonth):
                 pass
-            elif self.Day > self.endday:
+            elif int(self.Day) > int(self.endday):
                 pass
-            elif self.Hour > self.endhour:
+            elif int(self.Hour) > int(self.endhour):
                 pass
             elif int(self.Minute) > self.endminute:
                 pass
 
             else:
                 self.archiveDict.update({Key: datalist})
+
 
     def ConvertDateTime(self, Time, Date):
         self.Year = str((int(Date, 16)) >> 9)
@@ -591,11 +725,62 @@ class graphArchiveData(SerData):
         elif ArcWind == 15:
             returnWindDir = 'NNW'
         else:
-            returnWindDir = "Error"
+            returnWindDir = "nan"
 
         return (returnWindDir)
 
     def createGraph(self, arcselect):
+
+        def fixXticks(xinput):
+            labels = []
+            if self.timedifference < 1:
+                for j in xinput:
+                    labels.append(j)
+            elif self.timedifference == 1:
+                for j in xinput:
+                    labels.append(j)
+            elif self.timedifference < 7:
+                i = 0
+                for j in xinput:
+                    if i == 0:
+                        labels.append(j)
+                    else:
+                        labels.append("")
+                    i = i + 1
+                    if i == 6:
+                        i = 0
+            elif self.timedifference < 14:
+                i = 0
+                for j in xinput:
+                    if i == 0:
+                        labels.append(j)
+                    else:
+                        labels.append("")
+                    i = i + 1
+                    if i == 12:
+                        i = 0
+            elif self.timedifference < 30:
+                i = 0
+                for j in xinput:
+                    if i == 0:
+                        labels.append(j)
+                    else:
+                        labels.append("")
+                    i = i + 1
+                    if i == 48:
+                        i = 0
+            elif self.timedifference <= 90:
+                i = 0
+                for j in xinput:
+                    if i == 0:
+                        labels.append(j)
+                    else:
+                        labels.append("")
+                    i = i + 1
+                    if i == 96:
+                        i = 0
+            return labels
+
         xouttemp = []
         xouttemphigh = []
         xouttemplow = []
@@ -624,63 +809,71 @@ class graphArchiveData(SerData):
             outtemp, outtemphigh, outtemplow, rainfall, intemp, inhum, outhum, avwindspeed, highwindspeed, winddirhi, prevwind = [
                 value[i] for i in (0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10)]
 
-            if outtemp != '6553.5':
+            if outtemp != '3276.7':
                 youttemp.append(float(outtemp))
                 xouttemp.append(key)
+            else:
+                youttemp.append(float('nan'))
+                xouttemp.append(key)
 
-            if outtemphigh != '-32768':
+            if outtemphigh != '3276.8':
                 youttemphigh.append(float(outtemphigh))
                 xouttemphigh.append(key)
+            else:
+                youttemphigh.append(float('nan'))
+                xouttemphigh.append(key)
 
-            if outtemplow != '32767':
+            if outtemplow != '3276.7':
                 youttemplow.append(float(outtemplow))
+                xouttemplow.append(key)
+            else:
+                youttemplow.append(float('nan'))
                 xouttemplow.append(key)
 
             yrainfall.append(float(rainfall))
             xrainfall.append(key)
 
-            if intemp != '6553.5':
+            if intemp != '3276.7':
                 yintemp.append(float(intemp))
+                xintemp.append(key)
+            else:
+                yintemp.append(float('nan'))
                 xintemp.append(key)
 
             if inhum != '255':
                 yinhum.append(float(inhum))
                 xinhum.append(key)
+            else:
+                yinhum.append(float('nan'))
+                xinhum.append(key)
 
             if outhum != '255':
                 youthum.append(float(outhum))
+                xouthum.append(key)
+            else:
+                youthum.append(float('nan'))
                 xouthum.append(key)
 
             if yavwindspeed != '255':
                 yavwindspeed.append(float(avwindspeed))
                 xavwindspeed.append(key)
+            else:
+                yavwindspeed.append(float('nan'))
+                xavwindspeed.append(key)
 
             yhighwindspeed.append(float(highwindspeed))
             xhighwindspeed.append(key)
 
-            if winddirhi != 'Error':
-                ywinddirhi.append(winddirhi)
-                xwinddirhi.append(key)
+            ywinddirhi.append(winddirhi)
+            xwinddirhi.append(key)
 
-            if prevwind != 'Error':
-                yprevwind.append(prevwind)
-                xprevwind.append(key)
+            yprevwind.append(prevwind)
+            xprevwind.append(key)
 
         if arcselect == "ArcOutTemp":
             plt.plot(xouttemp, youttemp, label='Outdoor Temperature')
 
-            xticks = len(xouttemp)
-            mod = int(xticks/25)
-            if mod == 0:
-                mod = 1
-
-            labels = []
-
-            for i in range(len(xouttemp)):
-                if i % mod == 0:
-                    labels.append(xouttemp[i])
-                else:
-                    labels.append("")
+            labels = fixXticks(xouttemp)
 
             plt.xticks(ticks=xouttemp, labels=labels)
 
@@ -688,42 +881,92 @@ class graphArchiveData(SerData):
             plt.title('Outdoor Temperature')
         elif arcselect == "ArcOutTempHigh":
             plt.plot(xouttemphigh, youttemphigh, label='High Outdoor Temperature')
+
+            labels = fixXticks(xouttemphigh)
+
+            plt.xticks(ticks=xouttemphigh, labels=labels)
+
             plt.ylabel('Degrees (\u00b0F)')
             plt.title('High Outdoor Temperature')
         elif arcselect == "ArcOutTempLow":
             plt.plot(xouttemplow, youttemplow, label='Low Outdoor Temperature')
+
+            labels = fixXticks(xouttemplow)
+
+            plt.xticks(ticks=xouttemplow, labels=labels)
+
             plt.ylabel('Degrees (\u00b0F)')
             plt.title('Low Outdoor Temperature')
         elif arcselect == "ArcRainfall":
             plt.plot(xrainfall, yrainfall, label='Rainfall')
+
+            labels = fixXticks(xrainfall)
+
+            plt.xticks(ticks=xrainfall, labels=labels)
+
             plt.ylabel('Inches')
             plt.title('Rainfall')
         elif arcselect == "ArcInTemp":
             plt.plot(xintemp, yintemp, label='Indoor Temperature')
+
+            labels = fixXticks(xintemp)
+
+            plt.xticks(ticks=xintemp, labels=labels)
+
             plt.ylabel('Degrees (\u00b0F)')
             plt.title('Indoor Temperature')
         elif arcselect == "ArcInHum":
             plt.plot(xinhum, yinhum, label='Indoor Humidity')
+
+            labels = fixXticks(xinhum)
+
+            plt.xticks(ticks=xinhum, labels=labels)
+
             plt.ylabel('%')
             plt.title('Indoor Humidity')
         elif arcselect == "ArcOutHum":
             plt.plot(xouthum, youthum, label='Outdoor Humidity')
+
+            labels = fixXticks(xouthum)
+
+            plt.xticks(ticks=xouthum, labels=labels)
+
             plt.ylabel('%')
             plt.title('Outdoor Humidity')
         elif arcselect == "ArcAvWindSpeed":
             plt.plot(xavwindspeed, yavwindspeed, label='Average Wind Speed')
+
+            labels = fixXticks(xavwindspeed)
+
+            plt.xticks(ticks=xavwindspeed, labels=labels)
+
             plt.ylabel('MPH')
             plt.title('Average Wind Speed')
         elif arcselect == "ArcHighWindSpeed":
             plt.plot(xhighwindspeed, yhighwindspeed, label='High Wind Speed')
+
+            labels = fixXticks(xhighwindspeed)
+
+            plt.xticks(ticks=xhighwindspeed, labels=labels)
+
             plt.ylabel('MPH')
             plt.title('High Wind Speed')
         elif arcselect == "ArcDirHi":
             plt.scatter(xwinddirhi, ywinddirhi, label='High Wind Direction')
+
+            labels = fixXticks(xwinddirhi)
+
+            plt.xticks(ticks=xwinddirhi, labels=labels)
+
             plt.ylabel('Direction')
             plt.title('High Wind Direction')
         elif arcselect == "ArcPrevWind":
             plt.scatter(xprevwind, yprevwind, label='Prevailing Wind Direction')
+
+            labels = fixXticks(xprevwind)
+
+            plt.xticks(ticks=xprevwind, labels=labels)
+
             plt.ylabel('Direction')
             plt.title('Prevailing Wind Direction')
 
@@ -734,6 +977,8 @@ class graphArchiveData(SerData):
         fig.canvas.manager.set_window_title('WXtreme Archive Graph')
 
         plt.xlabel('Date and Time')
+
+        plt.grid(linestyle=":")
 
     def show_Graph(self):
         plt.show()
