@@ -13,16 +13,27 @@ class SendFTP:
         workingdir = os.getcwd()
 
         # Open password file and read file contents into dictionary (Currently encrypted, and not separated into individual values)
-        with open(f'{workingdir}\\Assets\\FTPCred.json', "r") as read_file:
-            self.currentlist = json.load(read_file)
+        try:
+            with open(f'{workingdir}\\Assets\\FTPCred.json', "r") as read_file:
+                self.currentlist = json.load(read_file)
+        except:
+            exit()
 
         # Open key file and read contents into variable
-        with open(f'{workingdir}\\Assets\\key.json', "r") as read_file:
-            self.key = json.load(read_file)
+        try:
+            with open(f'{workingdir}\\Assets\\key.json', "r") as read_file:
+                self.key = json.load(read_file)
+        except:
+            exit()
 
         # Read file
-        with open(f'{workingdir}\\Assets\\ftpsensorconf.json', "r") as read_file:
-            self.ftpsensorconfig = json.load(read_file)
+        try:
+            with open(f'{workingdir}\\Assets\\ftpsensorconf.json', "r") as read_file:
+                self.ftpsensorconfig = json.load(read_file)
+        except:
+            self.ftpsensorconfig = {}
+            with open(f'{workingdir}\\Assets\\ftpsensorconf.json', "w") as write_file:
+                json.dump(self.ftpsensorconfig, write_file)
 
         # Generate decryption key
         self.fernet = Fernet(self.key)
@@ -71,8 +82,13 @@ class SendFTP:
                     print('this is set')
 
                 # Read file
-                with open(f'{workingdir}\\Assets\\FTPData.json', "r") as read_file:
-                    self.FTPData = json.load(read_file)
+                try:
+                    with open(f'{workingdir}\\Assets\\FTPData.json', "r") as read_file:
+                        self.FTPData = json.load(read_file)
+                except:
+                    self.FTPData = {}
+                    with open(f'{workingdir}\\Assets\\FTPData.json', "w") as write_file:
+                        json.dump(self.FTPData, write_file)
 
                 keys = []
                 values = []
@@ -112,6 +128,8 @@ class SendFTP:
 
                 except PermissionError:
                     print('permission error')
+                    pass
+                except:
                     pass
 
             # Prevent program from looping several times when seconds = 0

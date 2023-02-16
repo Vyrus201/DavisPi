@@ -19,10 +19,12 @@ import ast
 from ProgressBar import ProgressBar
 import time
 from sys import exit
+import png
 
 
 if __name__ == "__main__":
     multiprocessing.freeze_support()
+
     # Create Class Instances
     GetCurData = serialcompi.SerData()
 
@@ -48,12 +50,22 @@ if __name__ == "__main__":
                 pass
 
             # Open file and read background path
-            with open(f'{workingdir}\\Assets\\backgroundconf.json', "r") as read_file:
-                self.imagefilename = json.load(read_file)
+            try:
+                with open(f'{workingdir}\\Assets\\backgroundconf.json', "r") as read_file:
+                    self.imagefilename = json.load(read_file)
+            except:
+                self.imagefilename = f'{workingdir}\\Assets\\defaultbackground.png'
+                with open(f'{workingdir}\\Assets\\backgroundconf.json', "w") as write_file:
+                    json.dump(self.imagefilename, write_file)
 
             # Open file and read sensor poll list
-            with open(f'{workingdir}\\Assets\\sensorpollconf.json', "r") as read_file:
-                self.sensorpollinfo = json.load(read_file)
+            try:
+                with open(f'{workingdir}\\Assets\\sensorpollconf.json', "r") as read_file:
+                    self.sensorpollinfo = json.load(read_file)
+            except:
+                self.sensorpollinfo = {}
+                with open(f'{workingdir}\\Assets\\sensorpollconf.json', "w") as write_file:
+                    json.dump(self.sensorpollinfo, write_file)
 
             # Initialize dictionary as blank
             self.labelinfo = {}
@@ -82,6 +94,15 @@ if __name__ == "__main__":
                 fileout = open(f'{workingdir}\\ErrorLog.txt', "a")
                 fileout.write(f'{datetime.datetime.now()}: Unable to open the following file path: {self.imagefilename}\n')
                 fileout.close()
+
+                p = [(255, 255, 255, 255, 255, 255, 255, 255, 255),
+                     (255, 255, 255, 255, 255, 255, 255, 255, 255),
+                     (255, 255, 255, 255, 255, 255, 255, 255, 255)]
+                f = open(f'{workingdir}\\Assets\\defaultbackground.png', 'wb')
+                w = png.Writer(3, 3, greyscale=False)
+                w.write(f, p)
+                f.close()
+
                 self.imagefilename = f'{workingdir}\\Assets\\defaultbackground.png'
                 self.image = Image.open(self.imagefilename)
                 self.resized = self.image.resize((self.screen_width, self.screen_height))
@@ -368,36 +389,54 @@ if __name__ == "__main__":
         def ConfigFTP(self):
 
             # Open password file and read file contents into dictionary (Currently encrypted, and not separated into individual values)
-            with open(f'{workingdir}\\Assets\\FTPCred.json', "r") as read_file:
-                self.currentlist = json.load(read_file)
+            try:
+                with open(f'{workingdir}\\Assets\\FTPCred.json', "r") as read_file:
+                    self.currentlist = json.load(read_file)
+            except:
+                pass
 
             # Open key file and read contents into variable
-            with open(f'{workingdir}\\Assets\\key.json', "r") as read_file:
-                self.key = json.load(read_file)
+            try:
+                with open(f'{workingdir}\\Assets\\key.json', "r") as read_file:
+                    self.key = json.load(read_file)
+            except:
+                pass
 
             # Read file
-            with open(f'{workingdir}\\Assets\\ftpsensorconf.json', "r") as read_file:
-                self.ftpsensorconfig = json.load(read_file)
+            try:
+                with open(f'{workingdir}\\Assets\\ftpsensorconf.json', "r") as read_file:
+                    self.ftpsensorconfig = json.load(read_file)
+            except:
+                self.ftpsensorconfig = {}
+                pass
 
-            # Generate decryption key
-            self.fernet = Fernet(self.key)
+            try:
+                # Generate decryption key
+                self.fernet = Fernet(self.key)
 
-            # Decrypt password file contents. Now formatted as a single string
-            self.currentlist = self.fernet.decrypt(self.currentlist).decode()
+                # Decrypt password file contents. Now formatted as a single string
+                self.currentlist = self.fernet.decrypt(self.currentlist).decode()
 
-            # Convert string into dictionary key/value pairs
-            self.currentlist = ast.literal_eval(self.currentlist)
+                # Convert string into dictionary key/value pairs
+                self.currentlist = ast.literal_eval(self.currentlist)
 
-            self.ftp_server = self.currentlist[0]
-            self.username = self.currentlist[1]
-            self.password = self.currentlist[2]
-            self.port = self.currentlist[3]
-            self.frequency = self.currentlist[4]
-            self.filename = self.currentlist[5]
+                self.ftp_server = self.currentlist[0]
+                self.username = self.currentlist[1]
+                self.password = self.currentlist[2]
+                self.port = self.currentlist[3]
+                self.frequency = self.currentlist[4]
+                self.filename = self.currentlist[5]
 
 
-
-            templist = []
+                templist = []
+            except:
+                self.ftp_server = ""
+                self.username = ""
+                self.password = ""
+                self.port = ""
+                self.frequency = ""
+                self.filename = ""
+                templist = []
 
             # Update list with each selection
             def get_selection():
@@ -472,8 +511,11 @@ if __name__ == "__main__":
                         self.ftpinfo.update({i: ['placeholder']})
 
                 # Save to file
-                with open(f'{workingdir}\\Assets\\ftpsensorconf.json', "w") as write_file:
-                    json.dump(self.ftpinfo, write_file)
+                try:
+                    with open(f'{workingdir}\\Assets\\ftpsensorconf.json', "w") as write_file:
+                        json.dump(self.ftpinfo, write_file)
+                except:
+                    pass
 
 
                 try:
@@ -498,13 +540,19 @@ if __name__ == "__main__":
                     # Encrypt dictionary and save to file
                     enclist = str(ftpList)
                     enclist = self.fernet.encrypt(enclist.encode()).decode()
-                    with open(f'{workingdir}\\Assets\\FTPCred.json', "w") as write_file:
-                        json.dump(enclist, write_file)
+                    try:
+                        with open(f'{workingdir}\\Assets\\FTPCred.json', "w") as write_file:
+                            json.dump(enclist, write_file)
+                    except:
+                        pass
 
                     # Decode key and save to file
                     self.key = self.key.decode()
-                    with open(f'{workingdir}\\Assets\\key.json', "w") as write_file:
-                        json.dump(self.key, write_file)
+                    try:
+                        with open(f'{workingdir}\\Assets\\key.json', "w") as write_file:
+                            json.dump(self.key, write_file)
+                    except:
+                        pass
 
                     self.FileAccessStatus = multiprocessing.Event()
                     self.ProcessStatus = multiprocessing.Event()
@@ -733,8 +781,11 @@ if __name__ == "__main__":
                 self.imagefilename = tempimagefilename
 
             # Save image path to file for reference later
-            with open(f'{workingdir}\\Assets\\backgroundconf.json', "w") as write_file:
-                json.dump(self.imagefilename, write_file)
+            try:
+                with open(f'{workingdir}\\Assets\\backgroundconf.json', "w") as write_file:
+                    json.dump(self.imagefilename, write_file)
+            except:
+                pass
 
             # Set new image as background
             self.image = Image.open(self.imagefilename)
@@ -813,8 +864,11 @@ if __name__ == "__main__":
                         self.sensorpollinfo.update({i: [50, 50, 'Arial', 12, 'Black']})
 
                 # Save to file
-                with open (f'{workingdir}\\Assets\\sensorpollconf.json', "w") as write_file:
-                    json.dump(self.sensorpollinfo, write_file)
+                try:
+                    with open (f'{workingdir}\\Assets\\sensorpollconf.json', "w") as write_file:
+                        json.dump(self.sensorpollinfo, write_file)
+                except:
+                    pass
 
                 # Close window
                 changesensorwin.destroy()
@@ -972,8 +1026,11 @@ if __name__ == "__main__":
             self.labelinfo.update({(len(self.label) + 1): [75, 75, 'Arial', 12, 'Black', "Right Click To Change"]})
 
             # Save dictionary to file
-            with open(f'{workingdir}\\Assets\\textlabelconf.json', "w") as write_file:
-                json.dump(self.labelinfo, write_file)
+            try:
+                with open(f'{workingdir}\\Assets\\textlabelconf.json', "w") as write_file:
+                    json.dump(self.labelinfo, write_file)
+            except:
+                pass
 
             # Spawn labels again
             self.spawnLabels()
@@ -988,8 +1045,11 @@ if __name__ == "__main__":
             self.labelinfo = {}
 
             # Save empty dictionary to file
-            with open(f'{workingdir}\\Assets\\textlabelconf.json', "w") as write_file:
-                json.dump(self.labelinfo, write_file)
+            try:
+                with open(f'{workingdir}\\Assets\\textlabelconf.json', "w") as write_file:
+                    json.dump(self.labelinfo, write_file)
+            except:
+                pass
 
 
 
@@ -1011,8 +1071,13 @@ if __name__ == "__main__":
             def destroylabel():
 
                 # Read text file
-                with open(f'{workingdir}\\Assets\\textlabelconf.json', "r") as read_file:
-                    self.labelinfo = json.load(read_file)
+                try:
+                    with open(f'{workingdir}\\Assets\\textlabelconf.json', "r") as read_file:
+                        self.labelinfo = json.load(read_file)
+                except:
+                    self.labelinfo = {}
+                    with open(f'{workingdir}\\Assets\\textlabelconf.json', 'w') as write_file:
+                        json.dump(self.labelinfo, write_file)
 
                 # If the selected item matches, delete it from the dictionary
                 for key, value in self.labelinfo.items():
@@ -1021,8 +1086,11 @@ if __name__ == "__main__":
                         break
 
                 # Save the dictionary to file
-                with open(f'{workingdir}\\Assets\\textlabelconf.json', "w") as write_file:
-                    json.dump(self.labelinfo, write_file)
+                try:
+                    with open(f'{workingdir}\\Assets\\textlabelconf.json', "w") as write_file:
+                        json.dump(self.labelinfo, write_file)
+                except:
+                    pass
 
                 # Close sub window
                 changelabelwin.destroy()
@@ -1045,8 +1113,14 @@ if __name__ == "__main__":
                     self.rettext = "Right Click to Change"
 
                 # Open label config file
-                with open(f'{workingdir}\\Assets\\textlabelconf.json', "r") as read_file:
-                    self.labelinfo = json.load(read_file)
+                try:
+                    with open(f'{workingdir}\\Assets\\textlabelconf.json', "r") as read_file:
+                        self.labelinfo = json.load(read_file)
+                except:
+                    self.labelinfo = {}
+                    # Save dictionary to file
+                    with open(f'{workingdir}\\Assets\\textlabelconf.json', "w") as write_file:
+                        json.dump(self.labelinfo, write_file)
 
                 # Iterate through dictionary
                 for key, value in self.labelinfo.items():
@@ -1058,8 +1132,11 @@ if __name__ == "__main__":
                         self.labelinfo.update({key: templist})
 
                 # Save dictionary to file
-                with open(f'{workingdir}\\Assets\\textlabelconf.json', "w") as write_file:
-                    json.dump(self.labelinfo, write_file)
+                try:
+                    with open(f'{workingdir}\\Assets\\textlabelconf.json', "w") as write_file:
+                        json.dump(self.labelinfo, write_file)
+                except:
+                    pass
 
                 # Destroy sub-window
                 changelabelwin.destroy()
@@ -1086,8 +1163,13 @@ if __name__ == "__main__":
                             "Cyan", "Blue", "Purple", "Brown"]
 
             # Open file
-            with open(f'{workingdir}\\Assets\\textlabelconf.json', "r") as read_file:
-                self.templabelconf = json.load(read_file)
+            try:
+                with open(f'{workingdir}\\Assets\\textlabelconf.json', "r") as read_file:
+                    self.templabelconf = json.load(read_file)
+            except:
+                self.templabelconf = {}
+                with open(f'{workingdir}\\Assets\\textlabelconf.json', "w") as write_file:
+                    json.dump(self.templabelconf, write_file)
 
             for key, value in self.templabelconf.items():
                 if self.res[0] == self.label[key]:
@@ -1196,8 +1278,13 @@ if __name__ == "__main__":
                 change_color_dropdown()
 
                 # Read text file
-                with open(f'{workingdir}\\Assets\\sensorpollconf.json', "r") as read_file:
-                    self.sensorpollinfo = json.load(read_file)
+                try:
+                    with open(f'{workingdir}\\Assets\\sensorpollconf.json', "r") as read_file:
+                        self.sensorpollinfo = json.load(read_file)
+                except:
+                    self.sensorpollinfo = {}
+                    with open(f'{workingdir}\\Assets\\sensorpollconf.json', "w") as write_file:
+                        json.dump(self.sensorpollinfo, write_file)
 
                 # Iterate through dictionary
                 for key, value in self.sensorpollinfo.items():
@@ -1209,8 +1296,11 @@ if __name__ == "__main__":
                         self.sensorpollinfo.update({key: templist})
 
                 # Save the dictionary to file
-                with open(f'{workingdir}\\Assets\\sensorpollconf.json', "w") as write_file:
-                    json.dump(self.sensorpollinfo, write_file)
+                try:
+                    with open(f'{workingdir}\\Assets\\sensorpollconf.json', "w") as write_file:
+                        json.dump(self.sensorpollinfo, write_file)
+                except:
+                    pass
 
                 # Destroy sub-window
                 changefontwin.destroy()
@@ -1253,8 +1343,13 @@ if __name__ == "__main__":
             changefontwin.geometry('285x150')
 
             # Open file
-            with open(f'{workingdir}\\Assets\\sensorpollconf.json', "r") as read_file:
-                self.tempsensorconf = json.load(read_file)
+            try:
+                with open(f'{workingdir}\\Assets\\sensorpollconf.json', "r") as read_file:
+                    self.tempsensorconf = json.load(read_file)
+            except:
+                self.tempsensorconf = {}
+                with open(f'{workingdir}\\Assets\\sensorpollconf.json', "w") as write_file:
+                    json.dump(self.tempsensorconf, write_file)
 
             for key, value in self.tempsensorconf.items():
                 if self.res[0] == self.dataDisplay[key]:
@@ -1429,8 +1524,13 @@ if __name__ == "__main__":
             self.label = {}
 
             # Read file
-            with open(f'{workingdir}\\Assets\\textlabelconf.json', "r") as read_file:
-                self.labelinfo = json.load(read_file)
+            try:
+                with open(f'{workingdir}\\Assets\\textlabelconf.json', "r") as read_file:
+                    self.labelinfo = json.load(read_file)
+            except:
+                self.labelinfo = {}
+                with open(f'{workingdir}\\Assets\\textlabelconf.json', "w") as write_file:
+                    json.dump(self.labelinfo, write_file)
 
             # Iterate through dictionary, spawning label items
             for key, value in self.labelinfo.items():
@@ -1497,8 +1597,11 @@ if __name__ == "__main__":
             self.FileAccessStatus.set()
 
             # Save to file
-            with open(f'{workingdir}\\Assets\\FTPData.json', "w") as write_file:
-                json.dump(self.dataDict, write_file)
+            try:
+                with open(f'{workingdir}\\Assets\\FTPData.json', "w") as write_file:
+                    json.dump(self.dataDict, write_file)
+            except:
+                pass
 
             self.FileAccessStatus.clear()
 
@@ -1510,12 +1613,22 @@ if __name__ == "__main__":
             self.canvas.unbind("<B1-Motion>")
 
             # Read file
-            with open(f'{workingdir}\\Assets\\sensorpollconf.json', "r") as read_file:
-                self.sensorpollinfo = json.load(read_file)
+            try:
+                with open(f'{workingdir}\\Assets\\sensorpollconf.json', "r") as read_file:
+                    self.sensorpollinfo = json.load(read_file)
+            except:
+                self.sensorpollinfo = {}
+                with open(f'{workingdir}\\Assets\\sensorpollconf.json', "w") as write_file:
+                    json.dump(self.sensorpollinfo, write_file)
 
             # Read file
-            with open(f'{workingdir}\\Assets\\textlabelconf.json', "r") as read_file:
-                self.labelinfo = json.load(read_file)
+            try:
+                with open(f'{workingdir}\\Assets\\textlabelconf.json', "r") as read_file:
+                    self.labelinfo = json.load(read_file)
+            except:
+                self.labelinfo = {}
+                with open(f'{workingdir}\\Assets\\textlabelconf.json', "w") as write_file:
+                    json.dump(self.labelinfo, write_file)
 
             # Iterate through dictionary
             for key, value in self.sensorpollinfo.items():
@@ -1541,12 +1654,18 @@ if __name__ == "__main__":
                     self.labelinfo.update({key: templist})
 
             # Save to file
-            with open(f'{workingdir}\\Assets\\sensorpollconf.json', "w") as write_file:
-                json.dump(self.sensorpollinfo, write_file)
+            try:
+                with open(f'{workingdir}\\Assets\\sensorpollconf.json', "w") as write_file:
+                    json.dump(self.sensorpollinfo, write_file)
+            except:
+                pass
 
             # Save to file
-            with open(f'{workingdir}\\Assets\\textlabelconf.json', "w") as write_file:
-                json.dump(self.labelinfo, write_file)
+            try:
+                with open(f'{workingdir}\\Assets\\textlabelconf.json', "w") as write_file:
+                    json.dump(self.labelinfo, write_file)
+            except:
+                pass
 
         # Find the nearest canvas item when mouse is clicked, bind that item to the mouse motion, making it draggable
         def nearest_item_with_tag(self, event):
@@ -1600,6 +1719,6 @@ if __name__ == "__main__":
     canvas.create_image(0, 0, image=image2, anchor='nw')
 
     # After x amount of milliseconds, create instance of GUI class (which destroys splashscreen)
-    splash_root.after(3500, GUI)
+    splash_root.after(30, GUI)
 
     mainloop()

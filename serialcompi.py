@@ -68,8 +68,13 @@ class SerData:
         workingdir = os.getcwd()
 
         # Open file
-        with open(f'{workingdir}\\Assets\\comportconf.json', "r") as read_file:
-            self.COMPort = json.load(read_file)
+        try:
+            with open(f'{workingdir}\\Assets\\comportconf.json', "r") as read_file:
+                self.COMPort = json.load(read_file)
+        except:
+            self.COMPort = "COM3"
+            with open(f'{workingdir}\\Assets\\comportconf.json', "w") as write_file:
+                json.dump(self.COMPort, write_file)
 
         # Call openSerial
         self.openSerial()
@@ -149,138 +154,142 @@ class SerData:
 
     def getData(self):
 
-        # Initialize self.sensorData
-        self.sensorData = {'curintemp': 'NULL', 'curinhum': 'NULL', 'curouttemp': 'NULL', 'curwinspeed': 'NULL',
-                      'curwindir': 'NULL', 'curouthum': 'NULL', 'curdailrain': 'NULL', 'curraterain': 'NULL',
-                      'hiwinspeed': 'NULL', 'hiintemp': 'NULL', 'lointemp': 'NULL', 'hiinhum': 'NULL',
-                      'loinhum': 'NULL', 'hiouttemp': 'NULL', 'loouttemp': 'NULL'}
+        try:
+            # Initialize self.sensorData
+            self.sensorData = {'curintemp': 'NULL', 'curinhum': 'NULL', 'curouttemp': 'NULL', 'curwinspeed': 'NULL',
+                          'curwindir': 'NULL', 'curouthum': 'NULL', 'curdailrain': 'NULL', 'curraterain': 'NULL',
+                          'hiwinspeed': 'NULL', 'hiintemp': 'NULL', 'lointemp': 'NULL', 'hiinhum': 'NULL',
+                          'loinhum': 'NULL', 'hiouttemp': 'NULL', 'loouttemp': 'NULL'}
 
-        # Poll station for current data, save results in hexData
-        self.ser.flushInput()
-        self.ser.flushOutput()
-        self.ser.write(str.encode("LPS2 1\n"))
-        self.hexData = bytes.hex(self.ser.read(100))
+            # Poll station for current data, save results in hexData
+            self.ser.flushInput()
+            self.ser.flushOutput()
+            self.ser.write(str.encode("LPS2 1\n"))
+            self.hexData = bytes.hex(self.ser.read(100))
 
-        # Poll station for highs & lows, save results in hexData1
-        self.ser.flushInput()
-        self.ser.flushOutput()
-        self.ser.write(str.encode("HILOWS\n"))
-        self.hexData1 = bytes.hex(self.ser.read(437))
+            # Poll station for highs & lows, save results in hexData1
+            self.ser.flushInput()
+            self.ser.flushOutput()
+            self.ser.write(str.encode("HILOWS\n"))
+            self.hexData1 = bytes.hex(self.ser.read(437))
 
-        # Get current indoor temp
-        self.curintemp = self.read2byte(20)
-        self.curintemp = self.curintemp[:-1] + '.' + self.curintemp[-1:]
-        self.sensorData.update({'curintemp': self.curintemp + '\u00b0F'})
+            # Get current indoor temp
+            self.curintemp = self.read2byte(20)
+            self.curintemp = self.curintemp[:-1] + '.' + self.curintemp[-1:]
+            self.sensorData.update({'curintemp': self.curintemp + '\u00b0F'})
 
-        # Get current indoor humidity
-        self.curinhum = self.read1byte(24)
-        self.sensorData.update({'curinhum': self.curinhum + '%'})
+            # Get current indoor humidity
+            self.curinhum = self.read1byte(24)
+            self.sensorData.update({'curinhum': self.curinhum + '%'})
 
-        # Get current outdoor temp
-        self.curouttemp = self.read2byte(26)
-        self.curouttemp = self.curouttemp[:-1] + '.' + self.curouttemp[-1:]
-        if self.curouttemp != '3276.7':
-            self.sensorData.update({'curouttemp': self.curouttemp + '\u00b0F'})
+            # Get current outdoor temp
+            self.curouttemp = self.read2byte(26)
+            self.curouttemp = self.curouttemp[:-1] + '.' + self.curouttemp[-1:]
+            if self.curouttemp != '3276.7':
+                self.sensorData.update({'curouttemp': self.curouttemp + '\u00b0F'})
 
-        # Get current wind speed
-        self.curwinspeed = self.read1byte(30)
-        if self.curwinspeed != '255':
-            self.sensorData.update({'curwinspeed': self.curwinspeed + 'MPH'})
+            # Get current wind speed
+            self.curwinspeed = self.read1byte(30)
+            if self.curwinspeed != '255':
+                self.sensorData.update({'curwinspeed': self.curwinspeed + 'MPH'})
 
-        # Get current wind direction
-        self.curwindir = self.read2byte(34)
-        self.curwindir = int(self.curwindir)
+            # Get current wind direction
+            self.curwindir = self.read2byte(34)
+            self.curwindir = int(self.curwindir)
 
-        if self.curwindir >= 11 and self.curwindir < 34:
-            self.curwindir = 'NNE'
-        elif self.curwindir >= 34 and self.curwindir < 56:
-            self.curwindir = 'NE'
-        elif self.curwindir >= 56 and self.curwindir < 79:
-            self.curwindir = 'ENE'
-        elif self.curwindir >= 79 and self.curwindir < 101:
-            self.curwindir = 'E'
-        elif self.curwindir >= 101 and self.curwindir < 124:
-            self.curwindir = 'ESE'
-        elif self.curwindir >= 126 and self.curwindir < 146:
-            self.curwindir = 'SE'
-        elif self.curwindir >= 146 and self.curwindir < 169:
-            self.curwindir = 'SSE'
-        elif self.curwindir >= 169 and self.curwindir < 191:
-            self.curwindir = 'S'
-        elif self.curwindir >= 191 and self.curwindir < 214:
-            self.curwindir = 'SSW'
-        elif self.curwindir >= 214 and self.curwindir < 236:
-            self.curwindir = 'SW'
-        elif self.curwindir >= 236 and self.curwindir < 259:
-            self.curwindir = 'WSW'
-        elif self.curwindir >= 259 and self.curwindir < 281:
-            self.curwindir = 'W'
-        elif self.curwindir >= 281 and self.curwindir < 304:
-            self.curwindir = 'WNW'
-        elif self.curwindir >= 304 and self.curwindir < 326:
-            self.curwindir = 'NW'
-        elif self.curwindir >= 326 and self.curwindir < 349:
-            self.curwindir = 'NNW'
-        elif self.curwindir >= 349 and self.curwindir <= 360:
-            self.curwindir = 'N'
-        elif self.curwindir >= 1 and self.curwindir < 11:
-            self.curwindir = 'N'
+            if self.curwindir >= 11 and self.curwindir < 34:
+                self.curwindir = 'NNE'
+            elif self.curwindir >= 34 and self.curwindir < 56:
+                self.curwindir = 'NE'
+            elif self.curwindir >= 56 and self.curwindir < 79:
+                self.curwindir = 'ENE'
+            elif self.curwindir >= 79 and self.curwindir < 101:
+                self.curwindir = 'E'
+            elif self.curwindir >= 101 and self.curwindir < 124:
+                self.curwindir = 'ESE'
+            elif self.curwindir >= 126 and self.curwindir < 146:
+                self.curwindir = 'SE'
+            elif self.curwindir >= 146 and self.curwindir < 169:
+                self.curwindir = 'SSE'
+            elif self.curwindir >= 169 and self.curwindir < 191:
+                self.curwindir = 'S'
+            elif self.curwindir >= 191 and self.curwindir < 214:
+                self.curwindir = 'SSW'
+            elif self.curwindir >= 214 and self.curwindir < 236:
+                self.curwindir = 'SW'
+            elif self.curwindir >= 236 and self.curwindir < 259:
+                self.curwindir = 'WSW'
+            elif self.curwindir >= 259 and self.curwindir < 281:
+                self.curwindir = 'W'
+            elif self.curwindir >= 281 and self.curwindir < 304:
+                self.curwindir = 'WNW'
+            elif self.curwindir >= 304 and self.curwindir < 326:
+                self.curwindir = 'NW'
+            elif self.curwindir >= 326 and self.curwindir < 349:
+                self.curwindir = 'NNW'
+            elif self.curwindir >= 349 and self.curwindir <= 360:
+                self.curwindir = 'N'
+            elif self.curwindir >= 1 and self.curwindir < 11:
+                self.curwindir = 'N'
 
-        if self.curwindir != 32767:
-            self.sensorData.update({'curwindir': self.curwindir})
+            if self.curwindir != 32767:
+                self.sensorData.update({'curwindir': self.curwindir})
 
 
-        # Get outside humidity
-        self.curouthum = self.read1byte(68)
-        if self.curouthum != '255':
-            self.sensorData.update({'curouthum': self.curouthum + '%'})
+            # Get outside humidity
+            self.curouthum = self.read1byte(68)
+            if self.curouthum != '255':
+                self.sensorData.update({'curouthum': self.curouthum + '%'})
 
-        # Get daily rain
-        self.curdailrain = self.read2byte(102)
-        self.curdailrain = str(int(self.curdailrain) / 100)
-        self.sensorData.update({'curdailrain': self.curdailrain + ' In.'})
+            # Get daily rain
+            self.curdailrain = self.read2byte(102)
+            self.curdailrain = str(int(self.curdailrain) / 100)
+            self.sensorData.update({'curdailrain': self.curdailrain + ' In.'})
 
-        # Get rain rate
-        self.curraterain = self.read2byte(84)
-        self.curraterain = str(int(self.curraterain) / 100)
-        if self.curraterain != '655.35':
-            self.sensorData.update({'curraterain': self.curraterain + ' In./Hr'})
+            # Get rain rate
+            self.curraterain = self.read2byte(84)
+            self.curraterain = str(int(self.curraterain) / 100)
+            if self.curraterain != '655.35':
+                self.sensorData.update({'curraterain': self.curraterain + ' In./Hr'})
 
-        # Get high daily wind speed
-        self.hiwinspeed = self.read1byte1(34)
-        self.sensorData.update({'hiwinspeed': self.hiwinspeed + 'MPH'})
+            # Get high daily wind speed
+            self.hiwinspeed = self.read1byte1(34)
+            self.sensorData.update({'hiwinspeed': self.hiwinspeed + 'MPH'})
 
-        # Get high daily indoor temp
-        self.hiintemp = self.read2byte1(44)
-        self.hiintemp = self.hiintemp[:-1] + '.' + self.hiintemp[-1:]
-        self.sensorData.update({'hiintemp': self.hiintemp + '\u00b0F'})
+            # Get high daily indoor temp
+            self.hiintemp = self.read2byte1(44)
+            self.hiintemp = self.hiintemp[:-1] + '.' + self.hiintemp[-1:]
+            self.sensorData.update({'hiintemp': self.hiintemp + '\u00b0F'})
 
-        # Get low daily indoor temp
-        self.lointemp = self.read2byte1(48)
-        self.lointemp = self.lointemp[:-1] + '.' + self.lointemp[-1:]
-        self.sensorData.update({'lointemp': self.lointemp + '\u00b0F'})
+            # Get low daily indoor temp
+            self.lointemp = self.read2byte1(48)
+            self.lointemp = self.lointemp[:-1] + '.' + self.lointemp[-1:]
+            self.sensorData.update({'lointemp': self.lointemp + '\u00b0F'})
 
-        # Get high daily indoor humidity
-        self.hiinhum = self.read1byte1(76)
-        self.sensorData.update({'hiinhum': self.hiinhum + '%'})
+            # Get high daily indoor humidity
+            self.hiinhum = self.read1byte1(76)
+            self.sensorData.update({'hiinhum': self.hiinhum + '%'})
 
-        # Get low daily indoor humidity
-        self.loinhum = self.read1byte1(78)
-        self.sensorData.update({'loinhum': self.loinhum + '%'})
+            # Get low daily indoor humidity
+            self.loinhum = self.read1byte1(78)
+            self.sensorData.update({'loinhum': self.loinhum + '%'})
 
-        # Get high daily outdoor temperature
-        self.hiouttemp = self.read2byte1(100)
-        self.hiouttemp = self.hiouttemp[:-1] + '.' + self.hiouttemp[-1:]
-        if self.hiouttemp != '3276.8':
-            self.sensorData.update({'hiouttemp': self.hiouttemp + '\u00b0F'})
+            # Get high daily outdoor temperature
+            self.hiouttemp = self.read2byte1(100)
+            self.hiouttemp = self.hiouttemp[:-1] + '.' + self.hiouttemp[-1:]
+            if self.hiouttemp != '3276.8':
+                self.sensorData.update({'hiouttemp': self.hiouttemp + '\u00b0F'})
 
-        # Get low daily outdoor temperature
-        self.loouttemp = self.read2byte1(96)
-        self.loouttemp = self.loouttemp[:-1] + '.' + self.loouttemp[-1:]
-        if self.loouttemp != '3276.7':
-            self.sensorData.update({'loouttemp': self.loouttemp + '\u00b0F'})
+            # Get low daily outdoor temperature
+            self.loouttemp = self.read2byte1(96)
+            self.loouttemp = self.loouttemp[:-1] + '.' + self.loouttemp[-1:]
+            if self.loouttemp != '3276.7':
+                self.sensorData.update({'loouttemp': self.loouttemp + '\u00b0F'})
 
-        return(self.sensorData)
+            return self.sensorData
+
+        except:
+            pass
 
     # Converts a 2 byte sized data block into decimal format (for current data)
     def read2byte(self, dataindex):
@@ -311,49 +320,56 @@ class SerData:
         return curval
 
     def setArchiveInt(self):
-        # Send Archive Interval
-        time.sleep(1.5)
-        self.ser.flushInput()
-        self.ser.flushOutput()
-        self.ser.write(str.encode("SETPER 60\n"))
+        try:
+            # Send Archive Interval
+            time.sleep(1.5)
+            self.ser.flushInput()
+            self.ser.flushOutput()
+            self.ser.write(str.encode("SETPER 60\n"))
+
+        except:
+            pass
 
     def updateTime(self):
+        try:
+            # Initialize Array
+            data_bytes = arr.array("i")
 
-        # Initialize Array
-        data_bytes = arr.array("i")
+            # Grab individual time pieces
+            system_time_year = datetime.datetime.today().year
+            system_time_year = (system_time_year - 1900)
+            system_time_month = datetime.datetime.today().month
+            system_time_day = datetime.datetime.today().day
+            system_time_hour = datetime.datetime.today().hour
+            system_time_minute = datetime.datetime.today().minute
+            system_time_second = datetime.datetime.today().second
 
-        # Grab individual time pieces
-        system_time_year = datetime.datetime.today().year
-        system_time_year = (system_time_year - 1900)
-        system_time_month = datetime.datetime.today().month
-        system_time_day = datetime.datetime.today().day
-        system_time_hour = datetime.datetime.today().hour
-        system_time_minute = datetime.datetime.today().minute
-        system_time_second = datetime.datetime.today().second
+            # Insert into array
+            data_bytes.insert(0, system_time_second)
+            data_bytes.insert(1, system_time_minute)
+            data_bytes.insert(2, system_time_hour)
+            data_bytes.insert(3, system_time_day)
+            data_bytes.insert(4, system_time_month)
+            data_bytes.insert(5, system_time_year)
 
-        # Insert into array
-        data_bytes.insert(0, system_time_second)
-        data_bytes.insert(1, system_time_minute)
-        data_bytes.insert(2, system_time_hour)
-        data_bytes.insert(3, system_time_day)
-        data_bytes.insert(4, system_time_month)
-        data_bytes.insert(5, system_time_year)
+            # Calculate CRC
+            crc_bytes = calcCRC(data_bytes)
 
-        # Calculate CRC
-        crc_bytes = calcCRC(data_bytes)
+            # Order CRC into high and low values
+            hi = crc_bytes >> 8
+            lo = crc_bytes & 0xff
 
-        # Order CRC into high and low values
-        hi = crc_bytes >> 8
-        lo = crc_bytes & 0xff
+            crcbytearray = bytearray([system_time_second, system_time_minute, system_time_hour, system_time_day, system_time_month, system_time_year, hi, lo])
 
-        crcbytearray = bytearray([system_time_second, system_time_minute, system_time_hour, system_time_day, system_time_month, system_time_year, hi, lo])
+            # Send time
+            self.ser.flushInput()
+            self.ser.flushOutput()
+            self.ser.write(str.encode("SETTIME\n"))
+            time.sleep(.5)
+            self.ser.write(crcbytearray)
 
-        # Send time
-        self.ser.flushInput()
-        self.ser.flushOutput()
-        self.ser.write(str.encode("SETTIME\n"))
-        time.sleep(.5)
-        self.ser.write(crcbytearray)
+        except:
+            pass
 
 
 class graphArchiveData(SerData):
@@ -362,126 +378,131 @@ class graphArchiveData(SerData):
     def __init__(self, instance, startday, startmonth, startyear, starthour,
             startminute, endday, endmonth, endyear, endhour, endminute):
 
-        self.startday = startday
-        self.startmonth = startmonth
-        self.startyear = startyear
-        self.starthour = starthour
-        self.startminute = startminute
+        try:
 
-        self.endday = endday
-        self.endmonth = endmonth
-        self.endyear = endyear
-        self.endhour = endhour
-        self.endminute = endminute
+            self.startday = startday
+            self.startmonth = startmonth
+            self.startyear = startyear
+            self.starthour = starthour
+            self.startminute = startminute
 
-
-        ###############################################
-
-        year = int(startyear)
-        month = int(startmonth)
-        day = int(startday)
-
-        hour = int(starthour)
-        minute = int(startminute)
+            self.endday = endday
+            self.endmonth = endmonth
+            self.endyear = endyear
+            self.endhour = endhour
+            self.endminute = endminute
 
 
+            ###############################################
 
-        DateStamp = day + month * 32 + (year) * 512
-        TimeStamp = 100 * hour + minute
+            year = int(startyear)
+            month = int(startmonth)
+            day = int(startday)
 
-        DateStamphi = DateStamp >> 8
-        DateStamplo = DateStamp & 0xff
-
-        TimeStamphi = TimeStamp >> 8
-        TimeStamplo = TimeStamp & 0xff
-
-        data_bytes = arr.array("i")
-
-        # Insert into array
-        data_bytes.insert(0, DateStamplo)
-        data_bytes.insert(1, DateStamphi)
-        data_bytes.insert(2, TimeStamplo)
-        data_bytes.insert(3, TimeStamphi)
-
-        # Calculate CRC
-        crc_bytes = calcCRC(data_bytes)
-
-        # Order CRC into high and low values
-        hi = crc_bytes >> 8
-        lo = crc_bytes & 0xff
-
-        databytearray = bytearray([DateStamplo, DateStamphi, TimeStamplo, TimeStamphi])
-        crcbytearray = bytearray([hi, lo])
-        #######################################################
+            hour = int(starthour)
+            minute = int(startminute)
 
 
-        instance.ser.flushInput()
-        instance.ser.flushOutput()
-        instance.ser.write(str.encode("DMPAFT\n"))
-        discard = str(bytes.hex(instance.ser.read(1)))
-        print(discard)
 
-        time.sleep(.1)
+            DateStamp = day + month * 32 + (year) * 512
+            TimeStamp = 100 * hour + minute
 
-        instance.ser.flushInput()
-        instance.ser.flushOutput()
-        instance.ser.write(databytearray)
+            DateStamphi = DateStamp >> 8
+            DateStamplo = DateStamp & 0xff
 
-        time.sleep(.1)
+            TimeStamphi = TimeStamp >> 8
+            TimeStamplo = TimeStamp & 0xff
 
-        instance.ser.flushInput()
-        instance.ser.flushOutput()
-        instance.ser.write(crcbytearray)
+            data_bytes = arr.array("i")
 
-        instance.ser.flushInput()
-        instance.ser.flushOutput()
-        discard = str(bytes.hex(instance.ser.read(1)))
-        print(discard)
+            # Insert into array
+            data_bytes.insert(0, DateStamplo)
+            data_bytes.insert(1, DateStamphi)
+            data_bytes.insert(2, TimeStamplo)
+            data_bytes.insert(3, TimeStamphi)
 
-        time.sleep(.1)
+            # Calculate CRC
+            crc_bytes = calcCRC(data_bytes)
 
-        pageInfo = str(bytes.hex(instance.ser.read(4)))
-        instance.ser.flushInput()
-        instance.ser.flushOutput()
-        ack = 6
-        ack = bytearray([ack])
+            # Order CRC into high and low values
+            hi = crc_bytes >> 8
+            lo = crc_bytes & 0xff
 
-        time.sleep(.25)
-
-        instance.ser.write(ack)
-        hexData = str(bytes.hex(instance.ser.read(267)))
-
-        pageCounthi = pageInfo[2:4]
-        pageCountlo = pageInfo[0:2]
-        pageCount = pageCounthi + pageCountlo
-        pageCount = int(pageCount, 16)
-
-        pageStarthi = pageInfo[6:8]
-        pageStartlo = pageInfo[4:6]
-        pageStart = pageStarthi + pageStartlo
-        pageStart = int(pageStart, 16)
-
-        iterationCounter = (pageCount - 1) * 5 + (5 - pageStart)
+            databytearray = bytearray([DateStamplo, DateStamphi, TimeStamplo, TimeStamphi])
+            crcbytearray = bytearray([hi, lo])
+            #######################################################
 
 
-        ##################################################
-
-        for i in range(0, pageCount - 1):
             instance.ser.flushInput()
             instance.ser.flushOutput()
+            instance.ser.write(str.encode("DMPAFT\n"))
+            discard = str(bytes.hex(instance.ser.read(1)))
+            print(discard)
+
+            time.sleep(.1)
+
+            instance.ser.flushInput()
+            instance.ser.flushOutput()
+            instance.ser.write(databytearray)
+
+            time.sleep(.1)
+
+            instance.ser.flushInput()
+            instance.ser.flushOutput()
+            instance.ser.write(crcbytearray)
+
+            instance.ser.flushInput()
+            instance.ser.flushOutput()
+            discard = str(bytes.hex(instance.ser.read(1)))
+            print(discard)
+
+            time.sleep(.1)
+
+            pageInfo = str(bytes.hex(instance.ser.read(4)))
+            instance.ser.flushInput()
+            instance.ser.flushOutput()
+            ack = 6
+            ack = bytearray([ack])
+
+            time.sleep(.25)
+
             instance.ser.write(ack)
-            hexData += bytes.hex(instance.ser.read(267))
+            hexData = str(bytes.hex(instance.ser.read(267)))
 
-        self.dataString = ""
-        for i in range(0, pageCount):
-            self.dataString = self.dataString + hexData[(i * 534) + 2:((i + 1) * 534) - 12]
+            pageCounthi = pageInfo[2:4]
+            pageCountlo = pageInfo[0:2]
+            pageCount = pageCounthi + pageCountlo
+            pageCount = int(pageCount, 16)
 
-        if pageStart == 0:
+            pageStarthi = pageInfo[6:8]
+            pageStartlo = pageInfo[4:6]
+            pageStart = pageStarthi + pageStartlo
+            pageStart = int(pageStart, 16)
+
+            iterationCounter = (pageCount - 1) * 5 + (5 - pageStart)
+
+
+            ##################################################
+
+            for i in range(0, pageCount - 1):
+                instance.ser.flushInput()
+                instance.ser.flushOutput()
+                instance.ser.write(ack)
+                hexData += bytes.hex(instance.ser.read(267))
+
+            self.dataString = ""
+            for i in range(0, pageCount):
+                self.dataString = self.dataString + hexData[(i * 534) + 2:((i + 1) * 534) - 12]
+
+            if pageStart == 0:
+                pass
+            else:
+                self.dataString = self.dataString[(pageStart - 1) * 104:]
+
+            self.decodeArchive(iterationCounter)
+
+        except:
             pass
-        else:
-            self.dataString = self.dataString[(pageStart - 1) * 104:]
-
-        self.decodeArchive(iterationCounter)
 
     def preloadArchive(self):
         startmonth = int(self.startmonth)
@@ -731,254 +752,262 @@ class graphArchiveData(SerData):
 
     def createGraph(self, arcselect):
 
-        def fixXticks(xinput):
-            labels = []
-            if self.timedifference < 1:
-                for j in xinput:
-                    labels.append(j)
-            elif self.timedifference == 1:
-                for j in xinput:
-                    labels.append(j)
-            elif self.timedifference < 7:
-                i = 0
-                for j in xinput:
-                    if i == 0:
+        try:
+
+            def fixXticks(xinput):
+                labels = []
+                if self.timedifference < 1:
+                    for j in xinput:
                         labels.append(j)
-                    else:
-                        labels.append("")
-                    i = i + 1
-                    if i == 6:
-                        i = 0
-            elif self.timedifference < 14:
-                i = 0
-                for j in xinput:
-                    if i == 0:
+                elif self.timedifference == 1:
+                    for j in xinput:
                         labels.append(j)
-                    else:
-                        labels.append("")
-                    i = i + 1
-                    if i == 12:
-                        i = 0
-            elif self.timedifference < 30:
-                i = 0
-                for j in xinput:
-                    if i == 0:
-                        labels.append(j)
-                    else:
-                        labels.append("")
-                    i = i + 1
-                    if i == 48:
-                        i = 0
-            elif self.timedifference <= 90:
-                i = 0
-                for j in xinput:
-                    if i == 0:
-                        labels.append(j)
-                    else:
-                        labels.append("")
-                    i = i + 1
-                    if i == 96:
-                        i = 0
-            return labels
+                elif self.timedifference < 7:
+                    i = 0
+                    for j in xinput:
+                        if i == 0:
+                            labels.append(j)
+                        else:
+                            labels.append("")
+                        i = i + 1
+                        if i == 6:
+                            i = 0
+                elif self.timedifference < 14:
+                    i = 0
+                    for j in xinput:
+                        if i == 0:
+                            labels.append(j)
+                        else:
+                            labels.append("")
+                        i = i + 1
+                        if i == 12:
+                            i = 0
+                elif self.timedifference < 30:
+                    i = 0
+                    for j in xinput:
+                        if i == 0:
+                            labels.append(j)
+                        else:
+                            labels.append("")
+                        i = i + 1
+                        if i == 48:
+                            i = 0
+                elif self.timedifference <= 90:
+                    i = 0
+                    for j in xinput:
+                        if i == 0:
+                            labels.append(j)
+                        else:
+                            labels.append("")
+                        i = i + 1
+                        if i == 96:
+                            i = 0
+                return labels
 
-        xouttemp = []
-        xouttemphigh = []
-        xouttemplow = []
-        xrainfall = []
-        xintemp = []
-        xinhum = []
-        xouthum = []
-        xavwindspeed = []
-        xhighwindspeed = []
-        xwinddirhi = []
-        xprevwind = []
+            xouttemp = []
+            xouttemphigh = []
+            xouttemplow = []
+            xrainfall = []
+            xintemp = []
+            xinhum = []
+            xouthum = []
+            xavwindspeed = []
+            xhighwindspeed = []
+            xwinddirhi = []
+            xprevwind = []
 
-        youttemp = []
-        youttemphigh = []
-        youttemplow = []
-        yrainfall = []
-        yintemp = []
-        yinhum = []
-        youthum = []
-        yavwindspeed = []
-        yhighwindspeed = []
-        ywinddirhi = []
-        yprevwind = []
+            youttemp = []
+            youttemphigh = []
+            youttemplow = []
+            yrainfall = []
+            yintemp = []
+            yinhum = []
+            youthum = []
+            yavwindspeed = []
+            yhighwindspeed = []
+            ywinddirhi = []
+            yprevwind = []
 
-        for key, value in self.archiveDict.items():
-            outtemp, outtemphigh, outtemplow, rainfall, intemp, inhum, outhum, avwindspeed, highwindspeed, winddirhi, prevwind = [
-                value[i] for i in (0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10)]
+            for key, value in self.archiveDict.items():
+                outtemp, outtemphigh, outtemplow, rainfall, intemp, inhum, outhum, avwindspeed, highwindspeed, winddirhi, prevwind = [
+                    value[i] for i in (0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10)]
 
-            if outtemp != '3276.7':
-                youttemp.append(float(outtemp))
-                xouttemp.append(key)
-            else:
-                youttemp.append(float('nan'))
-                xouttemp.append(key)
+                if outtemp != '3276.7':
+                    youttemp.append(float(outtemp))
+                    xouttemp.append(key)
+                else:
+                    youttemp.append(float('nan'))
+                    xouttemp.append(key)
 
-            if outtemphigh != '3276.8':
-                youttemphigh.append(float(outtemphigh))
-                xouttemphigh.append(key)
-            else:
-                youttemphigh.append(float('nan'))
-                xouttemphigh.append(key)
+                if outtemphigh != '3276.8':
+                    youttemphigh.append(float(outtemphigh))
+                    xouttemphigh.append(key)
+                else:
+                    youttemphigh.append(float('nan'))
+                    xouttemphigh.append(key)
 
-            if outtemplow != '3276.7':
-                youttemplow.append(float(outtemplow))
-                xouttemplow.append(key)
-            else:
-                youttemplow.append(float('nan'))
-                xouttemplow.append(key)
+                if outtemplow != '3276.7':
+                    youttemplow.append(float(outtemplow))
+                    xouttemplow.append(key)
+                else:
+                    youttemplow.append(float('nan'))
+                    xouttemplow.append(key)
 
-            yrainfall.append(float(rainfall))
-            xrainfall.append(key)
+                yrainfall.append(float(rainfall))
+                xrainfall.append(key)
 
-            if intemp != '3276.7':
-                yintemp.append(float(intemp))
-                xintemp.append(key)
-            else:
-                yintemp.append(float('nan'))
-                xintemp.append(key)
+                if intemp != '3276.7':
+                    yintemp.append(float(intemp))
+                    xintemp.append(key)
+                else:
+                    yintemp.append(float('nan'))
+                    xintemp.append(key)
 
-            if inhum != '255':
-                yinhum.append(float(inhum))
-                xinhum.append(key)
-            else:
-                yinhum.append(float('nan'))
-                xinhum.append(key)
+                if inhum != '255':
+                    yinhum.append(float(inhum))
+                    xinhum.append(key)
+                else:
+                    yinhum.append(float('nan'))
+                    xinhum.append(key)
 
-            if outhum != '255':
-                youthum.append(float(outhum))
-                xouthum.append(key)
-            else:
-                youthum.append(float('nan'))
-                xouthum.append(key)
+                if outhum != '255':
+                    youthum.append(float(outhum))
+                    xouthum.append(key)
+                else:
+                    youthum.append(float('nan'))
+                    xouthum.append(key)
 
-            if yavwindspeed != '255':
-                yavwindspeed.append(float(avwindspeed))
-                xavwindspeed.append(key)
-            else:
-                yavwindspeed.append(float('nan'))
-                xavwindspeed.append(key)
+                if yavwindspeed != '255':
+                    yavwindspeed.append(float(avwindspeed))
+                    xavwindspeed.append(key)
+                else:
+                    yavwindspeed.append(float('nan'))
+                    xavwindspeed.append(key)
 
-            yhighwindspeed.append(float(highwindspeed))
-            xhighwindspeed.append(key)
+                yhighwindspeed.append(float(highwindspeed))
+                xhighwindspeed.append(key)
 
-            ywinddirhi.append(winddirhi)
-            xwinddirhi.append(key)
+                ywinddirhi.append(winddirhi)
+                xwinddirhi.append(key)
 
-            yprevwind.append(prevwind)
-            xprevwind.append(key)
+                yprevwind.append(prevwind)
+                xprevwind.append(key)
 
-        if arcselect == "ArcOutTemp":
-            plt.plot(xouttemp, youttemp, label='Outdoor Temperature')
+            if arcselect == "ArcOutTemp":
+                plt.plot(xouttemp, youttemp, label='Outdoor Temperature')
 
-            labels = fixXticks(xouttemp)
+                labels = fixXticks(xouttemp)
 
-            plt.xticks(ticks=xouttemp, labels=labels)
+                plt.xticks(ticks=xouttemp, labels=labels)
 
-            plt.ylabel('Degrees (\u00b0F)')
-            plt.title('Outdoor Temperature')
-        elif arcselect == "ArcOutTempHigh":
-            plt.plot(xouttemphigh, youttemphigh, label='High Outdoor Temperature')
+                plt.ylabel('Degrees (\u00b0F)')
+                plt.title('Outdoor Temperature')
+            elif arcselect == "ArcOutTempHigh":
+                plt.plot(xouttemphigh, youttemphigh, label='High Outdoor Temperature')
 
-            labels = fixXticks(xouttemphigh)
+                labels = fixXticks(xouttemphigh)
 
-            plt.xticks(ticks=xouttemphigh, labels=labels)
+                plt.xticks(ticks=xouttemphigh, labels=labels)
 
-            plt.ylabel('Degrees (\u00b0F)')
-            plt.title('High Outdoor Temperature')
-        elif arcselect == "ArcOutTempLow":
-            plt.plot(xouttemplow, youttemplow, label='Low Outdoor Temperature')
+                plt.ylabel('Degrees (\u00b0F)')
+                plt.title('High Outdoor Temperature')
+            elif arcselect == "ArcOutTempLow":
+                plt.plot(xouttemplow, youttemplow, label='Low Outdoor Temperature')
 
-            labels = fixXticks(xouttemplow)
+                labels = fixXticks(xouttemplow)
 
-            plt.xticks(ticks=xouttemplow, labels=labels)
+                plt.xticks(ticks=xouttemplow, labels=labels)
 
-            plt.ylabel('Degrees (\u00b0F)')
-            plt.title('Low Outdoor Temperature')
-        elif arcselect == "ArcRainfall":
-            plt.plot(xrainfall, yrainfall, label='Rainfall')
+                plt.ylabel('Degrees (\u00b0F)')
+                plt.title('Low Outdoor Temperature')
+            elif arcselect == "ArcRainfall":
+                plt.plot(xrainfall, yrainfall, label='Rainfall')
 
-            labels = fixXticks(xrainfall)
+                labels = fixXticks(xrainfall)
 
-            plt.xticks(ticks=xrainfall, labels=labels)
+                plt.xticks(ticks=xrainfall, labels=labels)
 
-            plt.ylabel('Inches')
-            plt.title('Rainfall')
-        elif arcselect == "ArcInTemp":
-            plt.plot(xintemp, yintemp, label='Indoor Temperature')
+                plt.ylabel('Inches')
+                plt.title('Rainfall')
+            elif arcselect == "ArcInTemp":
+                plt.plot(xintemp, yintemp, label='Indoor Temperature')
 
-            labels = fixXticks(xintemp)
+                labels = fixXticks(xintemp)
 
-            plt.xticks(ticks=xintemp, labels=labels)
+                plt.xticks(ticks=xintemp, labels=labels)
 
-            plt.ylabel('Degrees (\u00b0F)')
-            plt.title('Indoor Temperature')
-        elif arcselect == "ArcInHum":
-            plt.plot(xinhum, yinhum, label='Indoor Humidity')
+                plt.ylabel('Degrees (\u00b0F)')
+                plt.title('Indoor Temperature')
+            elif arcselect == "ArcInHum":
+                plt.plot(xinhum, yinhum, label='Indoor Humidity')
 
-            labels = fixXticks(xinhum)
+                labels = fixXticks(xinhum)
 
-            plt.xticks(ticks=xinhum, labels=labels)
+                plt.xticks(ticks=xinhum, labels=labels)
 
-            plt.ylabel('%')
-            plt.title('Indoor Humidity')
-        elif arcselect == "ArcOutHum":
-            plt.plot(xouthum, youthum, label='Outdoor Humidity')
+                plt.ylabel('%')
+                plt.title('Indoor Humidity')
+            elif arcselect == "ArcOutHum":
+                plt.plot(xouthum, youthum, label='Outdoor Humidity')
 
-            labels = fixXticks(xouthum)
+                labels = fixXticks(xouthum)
 
-            plt.xticks(ticks=xouthum, labels=labels)
+                plt.xticks(ticks=xouthum, labels=labels)
 
-            plt.ylabel('%')
-            plt.title('Outdoor Humidity')
-        elif arcselect == "ArcAvWindSpeed":
-            plt.plot(xavwindspeed, yavwindspeed, label='Average Wind Speed')
+                plt.ylabel('%')
+                plt.title('Outdoor Humidity')
+            elif arcselect == "ArcAvWindSpeed":
+                plt.plot(xavwindspeed, yavwindspeed, label='Average Wind Speed')
 
-            labels = fixXticks(xavwindspeed)
+                labels = fixXticks(xavwindspeed)
 
-            plt.xticks(ticks=xavwindspeed, labels=labels)
+                plt.xticks(ticks=xavwindspeed, labels=labels)
 
-            plt.ylabel('MPH')
-            plt.title('Average Wind Speed')
-        elif arcselect == "ArcHighWindSpeed":
-            plt.plot(xhighwindspeed, yhighwindspeed, label='High Wind Speed')
+                plt.ylabel('MPH')
+                plt.title('Average Wind Speed')
+            elif arcselect == "ArcHighWindSpeed":
+                plt.plot(xhighwindspeed, yhighwindspeed, label='High Wind Speed')
 
-            labels = fixXticks(xhighwindspeed)
+                labels = fixXticks(xhighwindspeed)
 
-            plt.xticks(ticks=xhighwindspeed, labels=labels)
+                plt.xticks(ticks=xhighwindspeed, labels=labels)
 
-            plt.ylabel('MPH')
-            plt.title('High Wind Speed')
-        elif arcselect == "ArcDirHi":
-            plt.scatter(xwinddirhi, ywinddirhi, label='High Wind Direction')
+                plt.ylabel('MPH')
+                plt.title('High Wind Speed')
+            elif arcselect == "ArcDirHi":
+                plt.scatter(xwinddirhi, ywinddirhi, label='High Wind Direction')
 
-            labels = fixXticks(xwinddirhi)
+                labels = fixXticks(xwinddirhi)
 
-            plt.xticks(ticks=xwinddirhi, labels=labels)
+                plt.xticks(ticks=xwinddirhi, labels=labels)
 
-            plt.ylabel('Direction')
-            plt.title('High Wind Direction')
-        elif arcselect == "ArcPrevWind":
-            plt.scatter(xprevwind, yprevwind, label='Prevailing Wind Direction')
+                plt.ylabel('Direction')
+                plt.title('High Wind Direction')
+            elif arcselect == "ArcPrevWind":
+                plt.scatter(xprevwind, yprevwind, label='Prevailing Wind Direction')
 
-            labels = fixXticks(xprevwind)
+                labels = fixXticks(xprevwind)
 
-            plt.xticks(ticks=xprevwind, labels=labels)
+                plt.xticks(ticks=xprevwind, labels=labels)
 
-            plt.ylabel('Direction')
-            plt.title('Prevailing Wind Direction')
+                plt.ylabel('Direction')
+                plt.title('Prevailing Wind Direction')
 
-        plt.xticks(fontsize=8, rotation=60)
-        plt.subplots_adjust(bottom=0.26)
+            plt.xticks(fontsize=8, rotation=60)
+            plt.subplots_adjust(bottom=0.26)
 
-        fig = plt.gcf()
-        fig.canvas.manager.set_window_title('WXtreme Archive Graph')
+            fig = plt.gcf()
+            fig.canvas.manager.set_window_title('WXtreme Archive Graph')
 
-        plt.xlabel('Date and Time')
+            plt.xlabel('Date and Time')
 
-        plt.grid(linestyle=":")
+            plt.grid(linestyle=":")
+
+        except:
+            pass
 
     def show_Graph(self):
-        plt.show()
+        try:
+            plt.show()
+        except:
+            pass
