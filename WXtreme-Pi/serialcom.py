@@ -122,7 +122,7 @@ class SerData:
             # Create window
             comwin = Tk()
             comwin.geometry("250x150")
-            comwin.iconbitmap(f'{workingdir}\\icon.ico')
+            #comwin.iconbitmap(f'{workingdir}\\icon.ico')
             comwin.title("Enter COM port settings")
 
             comwin.protocol("WM_DELETE_WINDOW", exitprogram)
@@ -622,7 +622,22 @@ class graphArchiveData(SerData):
 
         self.preloadArchive()
 
-        # Get archive data for each page
+        if int(self.startday) < 10:
+            self.startday = "0" + str(self.startday)
+
+        if int(self.startmonth) < 10:
+            self.startmonth = "0" + str(self.startmonth)
+
+        if int(self.endday) < 10:
+            self.endday = "0" + str(self.endday)
+
+        if int(self.endmonth) < 10:
+            self.endmonth = "0" + str(self.endmonth)
+
+        startdate = str(self.startyear) + str(self.startmonth) + str(self.startday)
+
+        enddate = str(self.endyear) + str(self.endmonth) + str(self.endday)
+
         for i in range(0, iterationCounter):
             j = i * 104
             Date = self.read2bytefordatetime(0 + j)
@@ -646,31 +661,20 @@ class graphArchiveData(SerData):
             ArcWind = self.read1bytearc(54 + j)
             ArcPrevWind = self.WindDirection(ArcWind)
 
-            # Add all data points to list
             datalist = [ArcOutTemp, ArcOutTempHigh, ArcOutTempLow, ArcRainfall, ArcInTemp, ArcInHum, ArcOutHum,
                         ArcAvWindSpeed, ArcHighWindSpeed, ArcDirHi, ArcPrevWind]
 
-            # Update dictionary values (preloaded with hourly keys) with data points within specified time range
-            if int(self.Year) < int(self.startyear):
-                pass
-            elif int(self.Month) < int(self.startmonth):
-                pass
-            elif int(self.Day) < int(self.startday):
-                pass
-            elif int(self.Hour) < int(self.starthour):
-                pass
-            elif int(self.Minute) < self.startminute:
-                pass
+            if int(self.Day) < 10:
+                self.Day = "0" + str(self.Day)
 
-            elif int(self.Year) > int(self.endyear):
+            if int(self.Month) < 10:
+                self.Month = "0" + str(self.Month)
+
+            currentdate = str(self.Year) + str(self.Month) + str(self.Day)
+
+            if currentdate < startdate:
                 pass
-            elif int(self.Month) > int(self.endmonth):
-                pass
-            elif int(self.Day) > int(self.endday):
-                pass
-            elif int(self.Hour) > int(self.endhour):
-                pass
-            elif int(self.Minute) > self.endminute:
+            elif currentdate > enddate:
                 pass
 
             else:

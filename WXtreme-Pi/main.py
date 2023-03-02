@@ -22,13 +22,11 @@ import png
 
 
 if __name__ == "__main__":
-    # Necessary for compiling as exe
     multiprocessing.freeze_support()
 
     # Get current directory
     workingdir = os.getcwd()
 
-    # Create Assets folder
     if not os.path.exists(f'{workingdir}\\Assets'):
         os.makedirs(f'{workingdir}\\Assets')
 
@@ -99,7 +97,6 @@ if __name__ == "__main__":
                 fileout.write(f'{datetime.datetime.now()}: Unable to open the following file path: {self.imagefilename}\n')
                 fileout.close()
 
-                # Create default background image file. All white image
                 p = [(255, 255, 255, 255, 255, 255, 255, 255, 255),
                      (255, 255, 255, 255, 255, 255, 255, 255, 255),
                      (255, 255, 255, 255, 255, 255, 255, 255, 255)]
@@ -108,7 +105,6 @@ if __name__ == "__main__":
                 w.write(f, p)
                 f.close()
 
-                # Set background image as new defaultbackground image
                 self.imagefilename = f'{workingdir}\\defaultbackground.png'
                 self.image = Image.open(self.imagefilename)
                 self.resized = self.image.resize((self.screen_width, self.screen_height))
@@ -215,11 +211,9 @@ if __name__ == "__main__":
 
             # Call function to create labels
             self.spawnLabels()
-
             # Call initial function to display sensor data. This function will auto-loop itself
             self.spawnItems()
 
-            # Create FTP thread Status variables are shared variables between processes
             self.FileAccessStatus = multiprocessing.Event()
             self.ProcessStatus = multiprocessing.Event()
             self.FTPProcess = Process(target=SendFTP, args=(self.ProcessStatus,self.FileAccessStatus,))
@@ -230,32 +224,26 @@ if __name__ == "__main__":
         # Exit
         def ExitProgram(self):
             try:
-                # If FTP Process is running, set flag for process to kill itself
                 self.FTPProcess.is_alive()
                 self.ProcessStatus.set()
             except AttributeError:
                 pass
             exit()
 
-        # Create archive graph
         def CreateGraph(self):
 
-            # Save button
             def savearcstate():
-                # Get user selected information
                 startselect = startcal.entry.get()
                 endselect = endcal.entry.get()
                 arcselect = radioSelection.get()
                 creategraphwin.destroy()
 
-                # Separate user dates into individual pieces
                 firstslash = startselect.find("/")
                 secondslash = startselect.find("/", startselect.find("/") + 1)
                 startmonth = startselect[:firstslash]
                 startday = startselect[firstslash+1:secondslash]
                 startyear = startselect[secondslash+3:]
 
-                # Separate user dates into individual pieces
                 firstslash = endselect.find("/")
                 secondslash = endselect.find("/", endselect.find("/") + 1)
                 endmonth = endselect[:firstslash]
@@ -268,7 +256,6 @@ if __name__ == "__main__":
                 starthour = 0
                 endhour = 23
 
-                # Sanitize variables. Add preceding 0's, etc
                 if int(startmonth) < 10:
                     startmonth1 = '0' + str(startmonth)
                 else:
@@ -286,11 +273,9 @@ if __name__ == "__main__":
                     endday1 = '0' + str(endday)
                 else: endday1 = endday
 
-                # Convert dates to integers for comparison
                 startcompare = int(str(startyear) + str(startmonth1) + str(startday1))
                 endcompare = int(str(endyear) + str(endmonth1) + str(endday1))
 
-                # Error handling for improper date ordering
                 if startcompare > endcompare:
                     def tryagain():
                         DateGraphErrorwin.destroy()
@@ -310,7 +295,6 @@ if __name__ == "__main__":
                 date1 = datetime.datetime(day=int(startday), month=int(startmonth), year=2000+int(startyear))
                 date2 = datetime.datetime(day=int(endday), month=int(endmonth), year=2000 + int(endyear))
 
-                # Error handling for if user selection is greater than 90 days
                 if (((date2 - date1).days) > 90):
                     def tryagain():
                         DayGraphErrorwin.destroy()
@@ -327,29 +311,23 @@ if __name__ == "__main__":
                     exitbutton.place(relx=.5, rely=.75, anchor=CENTER)
                     return
 
-                # If running, kill off FTP process
                 try:
                     self.FTPProcess.is_alive()
                     self.ProcessStatus.set()
                 except AttributeError:
                     pass
 
-                # Close GUI window. Necessary since graph window uses tkinter, so can't have both open
                 self.close_GUI()
 
-                # Create process to show progress bar
                 self.Process1Status = multiprocessing.Event()
                 self.ProgressProcess = Process(target=ProgressBar, args=(self.Process1Status, ))
                 self.ProgressProcess.start()
 
-                # Get archive data from console
                 ArcGraph = serialcom.graphArchiveData(GetCurData, startday, startmonth, startyear, starthour,
                 startminute, endday, endmonth, endyear, endhour, endminute)
 
-                # Generate graph
                 ArcGraph.createGraph(arcselect)
 
-                # Kill off progress bar
                 try:
                     self.ProgressProcess.is_alive()
                     self.Process1Status.set()
@@ -357,7 +335,6 @@ if __name__ == "__main__":
                 except AttributeError:
                     pass
 
-                # Show graph
                 ArcGraph.show_Graph()
 
             # Open new window
@@ -398,7 +375,6 @@ if __name__ == "__main__":
                       "High Wind Direction": "ArcDirHi",
                       "Prevailing Wind Direction": "ArcPrevWind"}
 
-            # Create radio buttons
             i = 0
             for (text, value) in values.items():
                 Radiobutton(l4, text=text, variable=radioSelection,
@@ -513,7 +489,6 @@ if __name__ == "__main__":
                 self.key = Fernet.generate_key()
                 self.fernet = Fernet(self.key)
 
-                # Add user selection to ftpList
                 ftpList.append(retserver)
                 ftpList.append(retusername)
                 ftpList.append(retpassword)
@@ -544,7 +519,7 @@ if __name__ == "__main__":
                 except:
                     pass
 
-                # Kill off old FTP process
+
                 try:
                     self.FTPProcess.is_alive()
                     self.ProcessStatus.set()
@@ -581,13 +556,11 @@ if __name__ == "__main__":
                     except:
                         pass
 
-                    # Create FTP process
                     self.FileAccessStatus = multiprocessing.Event()
                     self.ProcessStatus = multiprocessing.Event()
                     self.FTPProcess = Process(target=SendFTP, args=(self.ProcessStatus, self.FileAccessStatus,))
                     self.FTPProcess.start()
 
-                # If connection to FTP server fails, make user re-enter information
                 except:
                     def tryagain():
                         FTPErrorwin.destroy()
@@ -653,7 +626,6 @@ if __name__ == "__main__":
             # Set frequency select variable as Int
             frequencyselect = StringVar(configFTPwin)
 
-            # Preload with previous entry
             frequencyselect.set(self.frequency)
 
             frequencyselect.trace('w', change_frequency_dropdown)
@@ -676,7 +648,6 @@ if __name__ == "__main__":
             selhiouttemp = IntVar()
             selloouttemp = IntVar()
 
-            # Preload with previous entry
             for key in self.ftpsensorconfig:
                 if key == 'curintemp':
                     selcurintemp.set(1)
@@ -767,36 +738,30 @@ if __name__ == "__main__":
             l4 = Label(l3, text='FTP Server')
             l4.grid(row=1, column=1, sticky='N', ipady=5, ipadx=5)
             FTPServerEntry = Entry(l3)
-            # Preload with previous entry
             FTPServerEntry.insert(0, self.ftp_server)
             FTPServerEntry.grid(row=2, column=1, sticky='N')
             l5 = Label(l3, text='Username')
             l5.grid(row=3, column=1, sticky='N', ipady=5, ipadx=5)
             UsernameEntry = Entry(l3)
-            # Preload with previous entry
             UsernameEntry.insert(0, self.username)
             UsernameEntry.grid(row=4, column=1, sticky='N')
             l6 = Label(l3, text='Password')
             l6.grid(row=5, column=1, sticky='N', ipady=5, ipadx=5)
             PasswordEntry = Entry(l3, show="*")
-            # Preload with previous entry
             PasswordEntry.insert(0, self.password)
             PasswordEntry.grid(row=6, column=1, sticky='N')
             l8 = Label(l3, text='Port (Leave blank for default of 21)')
             l8.grid(row=7, column=1, sticky='N', ipady=5, ipadx=5)
             PortEntry = Entry(l3)
-            # Preload with previous entry
             PortEntry.insert(0, self.port)
             PortEntry.grid(row=8, column=1, sticky='N')
             l9 = Label(l3, text='FTP Update Frequency (Minutes)')
             l9.grid(row=9, column=1, sticky='N', ipady=5, ipadx=5)
-            # Preload with previous entry
             frequencyoption = OptionMenu(l3, frequencyselect, self.frequency, *frequencyoptions)
             frequencyoption.grid(row=10, column=1, sticky='N', ipady=5, ipadx=5)
             l10 = Label(l3, text="Enter Name of CSV File to FTP\n(Do not include '.csv')")
             l10.grid(row=11, column=1, sticky='N', ipady=5, ipadx=5)
             FilenameEntry = Entry(l3)
-            # Preload with previous entry
             FilenameEntry.insert(0, self.filename)
             FilenameEntry.grid(row=12, column=1, sticky='N', ipady=5, ipadx=5)
 
@@ -885,10 +850,8 @@ if __name__ == "__main__":
                 # Clear list
                 self.sensorpollinfo = {}
 
-                # Call get_selection
                 get_selection()
 
-                # Iterate through selection. If it was previously selected, keep old data
                 for i in templist:
                     for key, value in self.oldsensorpollinfo.items():
                         if i == key:
@@ -897,7 +860,7 @@ if __name__ == "__main__":
                             self.sensorpollinfo.update({i: [oldx, oldy, oldfont, oldsize, oldcolor]})
 
 
-                # Clear out any repeated selections. Spawn new items with new data
+                # Clear out any repeated selections
                 for i in templist:
                     if i not in self.sensorpollinfo:
                         self.sensorpollinfo.update({i: [50, 50, 'Arial', 12, 'Black']})
@@ -912,7 +875,6 @@ if __name__ == "__main__":
                 # Close window
                 changesensorwin.destroy()
 
-                # Recreate sensor items
                 self.displayNewSensors()
 
             def selectall():
@@ -968,7 +930,7 @@ if __name__ == "__main__":
             selhiouttemp = IntVar()
             selloouttemp = IntVar()
 
-            # Preload with previous entry
+
             for key in self.sensorpollinfo:
                 if key == 'curintemp':
                     selcurintemp.set(1)
@@ -1393,13 +1355,11 @@ if __name__ == "__main__":
 
             sensorselect = 0
 
-            # Configure sensor text
             for key, value in self.tempsensorconf.items():
                 if self.res[0] == self.dataDisplay[key]:
                     filefont, filesize, filecolor = [value[i] for i in (2, 3, 4)]
                     sensorselect = 1
 
-            # Delete temporary label
             if sensorselect == 0:
                 changefontwin.destroy()
                 destroylabelwin = Toplevel(self.win)
@@ -1552,7 +1512,7 @@ if __name__ == "__main__":
                         if key == 'loouttemp':
                             sensorname = 'Low Out. Temp.'
 
-                        # Create sensor text and temporary label
+
                         self.dataDisplay[key] = self.canvas.create_text(x + i, y, text=value, tags="sensor", font=(font, size), fill=color)
                         self.templabel[key] = self.canvas.create_text(x + i, y+30, text=sensorname, tags='label1', font=(font, size), fill=color)
                         i = i + 130

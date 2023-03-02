@@ -4,21 +4,18 @@ import os
 
 def ProgressBar(ThreadStatus):
 
-    # Get current directory
     workingdir = os.getcwd()
 
-    # Check if ThreadStatus = 1, if so, kill off
     def tryClose():
         if ThreadStatus.is_set():
             root.destroy()
-        # Check again after 100mS
         root.after(100, tryClose)
 
-    # Create window
+
     root = tk.Tk()
     root.geometry('300x80')
     root.title('Generating Graph...')
-    root.iconbitmap(f'{workingdir}\\icon.ico')
+    #root.iconbitmap(f'{workingdir}\\icon.ico')
 
     root.grid()
 
