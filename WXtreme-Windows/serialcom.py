@@ -9,11 +9,9 @@ import os
 import json
 import matplotlib.pyplot as plt
 import matplotlib
-from sys import exit
-
-# Force Tkinter
 matplotlib.use('TkAgg')
 
+from sys import exit
 
 crcarray = arr.array('i', [0x0, 0x1021, 0x2042, 0x3063, 0x4084, 0x50a5, 0x60c6, 0x70e7,
 0x8108, 0x9129, 0xa14a, 0xb16b, 0xc18c, 0xd1ad, 0xe1ce, 0xf1ef,
@@ -82,9 +80,17 @@ class SerData:
         self.openSerial()
 
     def openSerial(self):
-        # Attempt to open serial
+        # Determine which USB port the station is connected to
+        #sub = "ttyUSB"
+        #usbout = subprocess.Popen("dmesg | grep 'cp210x converter now attached'", stdout=subprocess.PIPE, shell=True)
+        #temp = str(usbout.stdout.read())
+        #index = temp.rindex(sub)
+        #sliced = temp[index:index + 7]
+
+        # Connect to serial interface over the specified USB port
         try:
             self.ser = serial.Serial(
+            #port=(f'/dev/{sliced}'),
             port=self.COMPort,
             baudrate=19200,
             parity=serial.PARITY_NONE,
@@ -229,6 +235,7 @@ class SerData:
             if self.curwindir != 32767:
                 self.sensorData.update({'curwindir': self.curwindir})
 
+
             # Get outside humidity
             self.curouthum = self.read1byte(68)
             if self.curouthum != '255':
@@ -372,6 +379,7 @@ class graphArchiveData(SerData):
             startminute, endday, endmonth, endyear, endhour, endminute):
 
         try:
+
             self.startday = startday
             self.startmonth = startmonth
             self.startyear = startyear
@@ -393,6 +401,8 @@ class graphArchiveData(SerData):
 
             hour = int(starthour)
             minute = int(startminute)
+
+
 
             DateStamp = day + month * 32 + (year) * 512
             TimeStamp = 100 * hour + minute
@@ -418,12 +428,11 @@ class graphArchiveData(SerData):
             hi = crc_bytes >> 8
             lo = crc_bytes & 0xff
 
-            # Convert to bytearray
             databytearray = bytearray([DateStamplo, DateStamphi, TimeStamplo, TimeStamphi])
             crcbytearray = bytearray([hi, lo])
             #######################################################
 
-            # Send DMPAFT command
+
             instance.ser.flushInput()
             instance.ser.flushOutput()
             instance.ser.write(str.encode("DMPAFT\n"))
@@ -432,19 +441,16 @@ class graphArchiveData(SerData):
 
             time.sleep(.1)
 
-            # Write databytearray
             instance.ser.flushInput()
             instance.ser.flushOutput()
             instance.ser.write(databytearray)
 
             time.sleep(.1)
 
-            # Write CRC
             instance.ser.flushInput()
             instance.ser.flushOutput()
             instance.ser.write(crcbytearray)
 
-            # Ack
             instance.ser.flushInput()
             instance.ser.flushOutput()
             discard = str(bytes.hex(instance.ser.read(1)))
@@ -452,7 +458,6 @@ class graphArchiveData(SerData):
 
             time.sleep(.1)
 
-            # Read page information, send ACK
             pageInfo = str(bytes.hex(instance.ser.read(4)))
             instance.ser.flushInput()
             instance.ser.flushOutput()
@@ -461,11 +466,9 @@ class graphArchiveData(SerData):
 
             time.sleep(.25)
 
-            # Read 1st page
             instance.ser.write(ack)
             hexData = str(bytes.hex(instance.ser.read(267)))
 
-            # Calculate how many pages it is sending
             pageCounthi = pageInfo[2:4]
             pageCountlo = pageInfo[0:2]
             pageCount = pageCounthi + pageCountlo
@@ -481,14 +484,12 @@ class graphArchiveData(SerData):
 
             ##################################################
 
-            # Read pages
             for i in range(0, pageCount - 1):
                 instance.ser.flushInput()
                 instance.ser.flushOutput()
                 instance.ser.write(ack)
                 hexData += bytes.hex(instance.ser.read(267))
 
-            # Chop unnecessary information
             self.dataString = ""
             for i in range(0, pageCount):
                 self.dataString = self.dataString + hexData[(i * 534) + 2:((i + 1) * 534) - 12]
@@ -514,7 +515,6 @@ class graphArchiveData(SerData):
         startmonth1 = startmonth
         startday1 = startday
 
-        # Sanitize dates with preceeding 0s
         if startmonth < 10:
             startmonth1 = '0' + str(startmonth)
         else:
@@ -529,7 +529,6 @@ class graphArchiveData(SerData):
         if endday < 10:
             endday = '0' + str(endday)
 
-        # Convert dates to integers to be used in comparison
         startcompare = int(str(startyear) + str(startmonth1) + str(startday1))
         endcompare = int(str(endyear) + str(endmonth) + str(endday))
 
@@ -538,7 +537,6 @@ class graphArchiveData(SerData):
 
         self.timedifference = (date2 - date1).days
 
-        # Create hourly X points between start and end ates
         while startcompare <= endcompare:
             i = 0
             while i < 24:
@@ -554,7 +552,7 @@ class graphArchiveData(SerData):
                     {dtime: ['nan', 'nan', 'nan', 'nan', 'nan', 'nan', 'nan', 'nan', 'nan', 'nan', 'nan']})
                 i = i + 1
 
-            # Check current month. Handle month/year rollover
+            # Check current month
             if int(startmonth) == 2:
                 if int(startday) == 28:
                     startmonth = int(startmonth) + 1
@@ -614,7 +612,22 @@ class graphArchiveData(SerData):
 
         self.preloadArchive()
 
-        # Get archive data for each page
+        if int(self.startday) < 10:
+            self.startday = "0" + str(self.startday)
+
+        if int(self.startmonth) < 10:
+            self.startmonth = "0" + str(self.startmonth)
+
+        if int(self.endday) < 10:
+            self.endday = "0" + str(self.endday)
+
+        if int(self.endmonth) < 10:
+            self.endmonth = "0" + str(self.endmonth)
+
+        startdate = str(self.startyear) + str(self.startmonth) + str(self.startday)
+
+        enddate = str(self.endyear) + str(self.endmonth) + str(self.endday)
+
         for i in range(0, iterationCounter):
             j = i * 104
             Date = self.read2bytefordatetime(0 + j)
@@ -638,31 +651,20 @@ class graphArchiveData(SerData):
             ArcWind = self.read1bytearc(54 + j)
             ArcPrevWind = self.WindDirection(ArcWind)
 
-            # Add all data points to list
             datalist = [ArcOutTemp, ArcOutTempHigh, ArcOutTempLow, ArcRainfall, ArcInTemp, ArcInHum, ArcOutHum,
                         ArcAvWindSpeed, ArcHighWindSpeed, ArcDirHi, ArcPrevWind]
 
-            # Update dictionary values (preloaded with hourly keys) with data points within specified time range
-            if int(self.Year) < int(self.startyear):
-                pass
-            elif int(self.Month) < int(self.startmonth):
-                pass
-            elif int(self.Day) < int(self.startday):
-                pass
-            elif int(self.Hour) < int(self.starthour):
-                pass
-            elif int(self.Minute) < self.startminute:
-                pass
+            if int(self.Day) < 10:
+                self.Day = "0" + str(self.Day)
 
-            elif int(self.Year) > int(self.endyear):
+            if int(self.Month) < 10:
+                self.Month = "0" + str(self.Month)
+
+            currentdate = str(self.Year) + str(self.Month) + str(self.Day)
+
+            if currentdate < startdate:
                 pass
-            elif int(self.Month) > int(self.endmonth):
-                pass
-            elif int(self.Day) > int(self.endday):
-                pass
-            elif int(self.Hour) > int(self.endhour):
-                pass
-            elif int(self.Minute) > self.endminute:
+            elif currentdate > enddate:
                 pass
 
             else:
@@ -758,7 +760,7 @@ class graphArchiveData(SerData):
     def createGraph(self, arcselect):
 
         try:
-            # Create X ticks depending on date range graphed
+
             def fixXticks(xinput):
                 labels = []
                 if self.timedifference < 1:
@@ -809,7 +811,6 @@ class graphArchiveData(SerData):
                             i = 0
                 return labels
 
-            # Create X lists
             xouttemp = []
             xouttemphigh = []
             xouttemplow = []
@@ -822,7 +823,6 @@ class graphArchiveData(SerData):
             xwinddirhi = []
             xprevwind = []
 
-            # Create Y lists
             youttemp = []
             youttemphigh = []
             youttemplow = []
@@ -835,7 +835,6 @@ class graphArchiveData(SerData):
             ywinddirhi = []
             yprevwind = []
 
-            # Get values from archiveDict. Add items to X and Y lists
             for key, value in self.archiveDict.items():
                 outtemp, outtemphigh, outtemplow, rainfall, intemp, inhum, outhum, avwindspeed, highwindspeed, winddirhi, prevwind = [
                     value[i] for i in (0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10)]
@@ -901,9 +900,9 @@ class graphArchiveData(SerData):
                 yprevwind.append(prevwind)
                 xprevwind.append(key)
 
-            # Create archive graph dependent on user selection
             if arcselect == "ArcOutTemp":
                 plt.plot(xouttemp, youttemp, label='Outdoor Temperature')
+                plt.scatter(xouttemp, youttemp, s=3)
 
                 labels = fixXticks(xouttemp)
 
@@ -913,6 +912,7 @@ class graphArchiveData(SerData):
                 plt.title('Outdoor Temperature')
             elif arcselect == "ArcOutTempHigh":
                 plt.plot(xouttemphigh, youttemphigh, label='High Outdoor Temperature')
+                plt.scatter(xouttemphigh, youttemphigh, s=3)
 
                 labels = fixXticks(xouttemphigh)
 
@@ -922,6 +922,7 @@ class graphArchiveData(SerData):
                 plt.title('High Outdoor Temperature')
             elif arcselect == "ArcOutTempLow":
                 plt.plot(xouttemplow, youttemplow, label='Low Outdoor Temperature')
+                plt.scatter(xouttemplow, youttemplow, s=3)
 
                 labels = fixXticks(xouttemplow)
 
@@ -931,6 +932,7 @@ class graphArchiveData(SerData):
                 plt.title('Low Outdoor Temperature')
             elif arcselect == "ArcRainfall":
                 plt.plot(xrainfall, yrainfall, label='Rainfall')
+                plt.scatter(xrainfall, yrainfall, s=3)
 
                 labels = fixXticks(xrainfall)
 
@@ -940,6 +942,7 @@ class graphArchiveData(SerData):
                 plt.title('Rainfall')
             elif arcselect == "ArcInTemp":
                 plt.plot(xintemp, yintemp, label='Indoor Temperature')
+                plt.scatter(xintemp, yintemp, s=3)
 
                 labels = fixXticks(xintemp)
 
@@ -949,6 +952,7 @@ class graphArchiveData(SerData):
                 plt.title('Indoor Temperature')
             elif arcselect == "ArcInHum":
                 plt.plot(xinhum, yinhum, label='Indoor Humidity')
+                plt.scatter(xinhum, yinhum, s=3)
 
                 labels = fixXticks(xinhum)
 
@@ -958,6 +962,7 @@ class graphArchiveData(SerData):
                 plt.title('Indoor Humidity')
             elif arcselect == "ArcOutHum":
                 plt.plot(xouthum, youthum, label='Outdoor Humidity')
+                plt.scatter(xouthum, youthum, s=3)
 
                 labels = fixXticks(xouthum)
 
@@ -967,6 +972,7 @@ class graphArchiveData(SerData):
                 plt.title('Outdoor Humidity')
             elif arcselect == "ArcAvWindSpeed":
                 plt.plot(xavwindspeed, yavwindspeed, label='Average Wind Speed')
+                plt.scatter(xavwindspeed, yavwindspeed, s=3)
 
                 labels = fixXticks(xavwindspeed)
 
@@ -976,6 +982,7 @@ class graphArchiveData(SerData):
                 plt.title('Average Wind Speed')
             elif arcselect == "ArcHighWindSpeed":
                 plt.plot(xhighwindspeed, yhighwindspeed, label='High Wind Speed')
+                plt.scatter(xhighwindspeed, yhighwindspeed, s=3)
 
                 labels = fixXticks(xhighwindspeed)
 
@@ -984,7 +991,7 @@ class graphArchiveData(SerData):
                 plt.ylabel('MPH')
                 plt.title('High Wind Speed')
             elif arcselect == "ArcDirHi":
-                plt.scatter(xwinddirhi, ywinddirhi, label='High Wind Direction')
+                plt.scatter(xwinddirhi, ywinddirhi, s=3, label='High Wind Direction')
 
                 labels = fixXticks(xwinddirhi)
 
@@ -993,7 +1000,7 @@ class graphArchiveData(SerData):
                 plt.ylabel('Direction')
                 plt.title('High Wind Direction')
             elif arcselect == "ArcPrevWind":
-                plt.scatter(xprevwind, yprevwind, label='Prevailing Wind Direction')
+                plt.scatter(xprevwind, yprevwind, s=3, label='Prevailing Wind Direction')
 
                 labels = fixXticks(xprevwind)
 
@@ -1002,7 +1009,6 @@ class graphArchiveData(SerData):
                 plt.ylabel('Direction')
                 plt.title('Prevailing Wind Direction')
 
-            # Rotate x labels
             plt.xticks(fontsize=8, rotation=60)
             plt.subplots_adjust(bottom=0.26)
 
@@ -1011,13 +1017,11 @@ class graphArchiveData(SerData):
 
             plt.xlabel('Date and Time')
 
-            # Create grid
             plt.grid(linestyle=":")
 
         except:
             pass
 
-    # Display graph
     def show_Graph(self):
         try:
             plt.show()

@@ -67,17 +67,13 @@ class SendFTP:
 
         counter = 0
 
-        # Endless loop
         while True:
-            # Wait until top of minute
             now = time.localtime().tm_sec
             while now > 0:
                 now = time.localtime().tm_sec
-                # Monitor ThreadStatus
                 if ThreadStatus.is_set():
                     exit()
 
-            # Increment counter, if x amount of minutes have passed, send FTP data
             counter = counter + 1
             if counter == self.frequency:
                 counter = 0
@@ -97,13 +93,11 @@ class SendFTP:
                 keys = []
                 values = []
 
-                # Load FTP information
                 for key, value in self.FTPData.items():
                     if key in self.ftpsensorconfig:
                         keys.append(key)
                         values.append(value)
 
-                # Save to csv
                 try:
                     with open(f'{workingdir}\\Assets\\{self.filename}.csv', 'w') as csvfile:
                         for i in keys:
@@ -118,9 +112,9 @@ class SendFTP:
                     ftp.connect(self.ftp_server, int(self.port))
                     ftp.login(self.username, self.password)
 
-                    # Write csv
                     with open(f'{workingdir}\\Assets\\{self.filename}.csv', "rb") as file:
                         ftp.storbinary(f'STOR WXTremeFTP.csv', file)
+                    print('store')
 
                     # Attempts to gracefully terminate FTP connection. If error, connection is forcefully closed and an event is written to the event log
                     try:
