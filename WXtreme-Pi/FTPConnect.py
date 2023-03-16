@@ -14,29 +14,31 @@ class SendFTP:
 
         # Open password file and read file contents into dictionary (Currently encrypted, and not separated into individual values)
         try:
-            with open(f'{workingdir}\\Assets\\FTPCred.json', "r") as read_file:
+            with open(f'{workingdir}/Assets/FTPCred.json', "r") as read_file:
                 self.currentlist = json.load(read_file)
         except:
             exit()
 
         # Open key file and read contents into variable
         try:
-            with open(f'{workingdir}\\Assets\\key.json', "r") as read_file:
+            with open(f'{workingdir}/Assets/key.json', "r") as read_file:
                 self.key = json.load(read_file)
         except:
             exit()
 
         # Read file
         try:
-            with open(f'{workingdir}\\Assets\\ftpsensorconf.json', "r") as read_file:
+            with open(f'{workingdir}/Assets/ftpsensorconf.json', "r") as read_file:
                 self.ftpsensorconfig = json.load(read_file)
         except:
             self.ftpsensorconfig = {}
-            with open(f'{workingdir}\\Assets\\ftpsensorconf.json', "w") as write_file:
+            with open(f'{workingdir}/Assets/ftpsensorconf.json', "w") as write_file:
                 json.dump(self.ftpsensorconfig, write_file)
 
         # Generate decryption key
         self.fernet = Fernet(self.key)
+        
+        self.currentlist = bytes(self.currentlist, 'utf-8')
 
         # Decrypt password file contents. Now formatted as a single string
         self.currentlist = self.fernet.decrypt(self.currentlist).decode()
@@ -60,7 +62,7 @@ class SendFTP:
             ftp.login(self.username, self.password)
             ftp.close()
         except:
-            fileout = open(f'{workingdir}\\ErrorLog.txt', "a")
+            fileout = open(f'{workingdir}/ErrorLog.txt', "a")
             fileout.write(f'{datetime.datetime.now()}: Unable to establish FTP connection. Re-enter FTP configuration\n')
             fileout.close()
             exit()
@@ -83,11 +85,11 @@ class SendFTP:
 
                 # Read file
                 try:
-                    with open(f'{workingdir}\\Assets\\FTPData.json', "r") as read_file:
+                    with open(f'{workingdir}/Assets/FTPData.json', "r") as read_file:
                         self.FTPData = json.load(read_file)
                 except:
                     self.FTPData = {}
-                    with open(f'{workingdir}\\Assets\\FTPData.json', "w") as write_file:
+                    with open(f'{workingdir}/Assets/FTPData.json', "w") as write_file:
                         json.dump(self.FTPData, write_file)
 
                 keys = []
@@ -99,7 +101,7 @@ class SendFTP:
                         values.append(value)
 
                 try:
-                    with open(f'{workingdir}\\Assets\\{self.filename}.csv', 'w') as csvfile:
+                    with open(f'{workingdir}/Assets/{self.filename}.csv', 'w') as csvfile:
                         for i in keys:
                             csvfile.write(f'{i},')
                         csvfile.write("\n")
@@ -111,16 +113,18 @@ class SendFTP:
                     # Connect to and log in to FTP server according to saved information
                     ftp.connect(self.ftp_server, int(self.port))
                     ftp.login(self.username, self.password)
+                    
+                    ftp.sendcmd('OPTS UTF8 ON')
 
-                    with open(f'{workingdir}\\Assets\\{self.filename}.csv', "rb") as file:
-                        ftp.storbinary(f'STOR WXTremeFTP.csv', file)
+                    with open(f'{workingdir}/Assets/{self.filename}.csv', "rb") as file:
+                        ftp.storbinary(f'STOR {self.filename}.csv', file)
                     print('store')
 
                     # Attempts to gracefully terminate FTP connection. If error, connection is forcefully closed and an event is written to the event log
                     try:
                         ftp.quit()
                     except:
-                        fileout = open(f'{self.workingdir}\\ErrorLog.txt', "a")
+                        fileout = open(f'{self.workingdir}/ErrorLog.txt', "a")
                         fileout.write(
                             f'{datetime.datetime.now()}: Unable to gracefully close connection to FTP server "{self.ftp_server}". FTP connection will now close forcefully.\n')
                         fileout.close()

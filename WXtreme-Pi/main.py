@@ -27,8 +27,8 @@ if __name__ == "__main__":
     # Get current directory
     workingdir = os.getcwd()
 
-    if not os.path.exists(f'{workingdir}\\Assets'):
-        os.makedirs(f'{workingdir}\\Assets')
+    if not os.path.exists(f'{workingdir}/Assets'):
+        os.makedirs(f'{workingdir}/Assets')
 
     # Create Class Instances
     GetCurData = serialcom.SerData()
@@ -53,20 +53,20 @@ if __name__ == "__main__":
 
             # Open file and read background path
             try:
-                with open(f'{workingdir}\\Assets\\backgroundconf.json', "r") as read_file:
+                with open(f'{workingdir}/Assets/backgroundconf.json', "r") as read_file:
                     self.imagefilename = json.load(read_file)
             except:
-                self.imagefilename = f'{workingdir}\\defaultbackground.png'
-                with open(f'{workingdir}\\Assets\\backgroundconf.json', "w") as write_file:
+                self.imagefilename = f'{workingdir}/defaultbackground.png'
+                with open(f'{workingdir}/Assets/backgroundconf.json', "w") as write_file:
                     json.dump(self.imagefilename, write_file)
 
             # Open file and read sensor poll list
             try:
-                with open(f'{workingdir}\\Assets\\sensorpollconf.json', "r") as read_file:
+                with open(f'{workingdir}/Assets/sensorpollconf.json', "r") as read_file:
                     self.sensorpollinfo = json.load(read_file)
             except:
                 self.sensorpollinfo = {}
-                with open(f'{workingdir}\\Assets\\sensorpollconf.json', "w") as write_file:
+                with open(f'{workingdir}/Assets/sensorpollconf.json', "w") as write_file:
                     json.dump(self.sensorpollinfo, write_file)
 
             # Initialize dictionary as blank
@@ -82,7 +82,7 @@ if __name__ == "__main__":
             self.win.geometry(f'{self.screen_width}x{self.screen_height}+0+0')
 
             # Change window settings
-            #self.win.iconbitmap(f'{workingdir}\\icon.ico')
+            #self.win.iconbitmap(f'{workingdir}/icon.ico')
             self.win.title("WXtreme - Davis Vantage Pro 2")
 
             # Open the Image File
@@ -93,19 +93,19 @@ if __name__ == "__main__":
 
             # If file not found, add error message to error log
             except FileNotFoundError:
-                fileout = open(f'{workingdir}\\ErrorLog.txt', "a")
+                fileout = open(f'{workingdir}/ErrorLog.txt', "a")
                 fileout.write(f'{datetime.datetime.now()}: Unable to open the following file path: {self.imagefilename}\n')
                 fileout.close()
 
                 p = [(255, 255, 255, 255, 255, 255, 255, 255, 255),
                      (255, 255, 255, 255, 255, 255, 255, 255, 255),
                      (255, 255, 255, 255, 255, 255, 255, 255, 255)]
-                f = open(f'{workingdir}\\defaultbackground.png', 'wb')
+                f = open(f'{workingdir}/defaultbackground.png', 'wb')
                 w = png.Writer(3, 3, greyscale=False)
                 w.write(f, p)
                 f.close()
 
-                self.imagefilename = f'{workingdir}\\defaultbackground.png'
+                self.imagefilename = f'{workingdir}/defaultbackground.png'
                 self.image = Image.open(self.imagefilename)
                 self.resized = self.image.resize((self.screen_width, self.screen_height))
                 self.image2 = ImageTk.PhotoImage(self.resized)
@@ -282,7 +282,7 @@ if __name__ == "__main__":
 
                     # Open new window
                     DateGraphErrorwin = Toplevel(self.win)
-                    #DateGraphErrorwin.iconbitmap(f'{workingdir}\\icon.ico')
+                    #DateGraphErrorwin.iconbitmap(f'{workingdir}/icon.ico')
                     DateGraphErrorwin.title("Error")
                     DateGraphErrorwin.geometry('150x100')
 
@@ -301,7 +301,7 @@ if __name__ == "__main__":
 
                     # Open new window
                     DayGraphErrorwin = Toplevel(self.win)
-                    #DayGraphErrorwin.iconbitmap(f'{workingdir}\\icon.ico')
+                    #DayGraphErrorwin.iconbitmap(f'{workingdir}/icon.ico')
                     DayGraphErrorwin.title("Error")
                     DayGraphErrorwin.geometry('150x100')
 
@@ -339,7 +339,7 @@ if __name__ == "__main__":
 
             # Open new window
             creategraphwin = Toplevel(self.win)
-            #creategraphwin.iconbitmap(f'{workingdir}\\icon.ico')
+            #creategraphwin.iconbitmap(f'{workingdir}/icon.ico')
             creategraphwin.title("Select Time Range and Sensor to Graph")
             creategraphwin.geometry('495x400')
 
@@ -392,21 +392,21 @@ if __name__ == "__main__":
 
             # Open password file and read file contents into dictionary (Currently encrypted, and not separated into individual values)
             try:
-                with open(f'{workingdir}\\Assets\\FTPCred.json', "r") as read_file:
+                with open(f'{workingdir}/Assets/FTPCred.json', "r") as read_file:
                     self.currentlist = json.load(read_file)
             except:
                 pass
 
             # Open key file and read contents into variable
             try:
-                with open(f'{workingdir}\\Assets\\key.json', "r") as read_file:
+                with open(f'{workingdir}/Assets/key.json', "r") as read_file:
                     self.key = json.load(read_file)
             except:
                 pass
 
             # Read file
             try:
-                with open(f'{workingdir}\\Assets\\ftpsensorconf.json', "r") as read_file:
+                with open(f'{workingdir}/Assets/ftpsensorconf.json', "r") as read_file:
                     self.ftpsensorconfig = json.load(read_file)
             except:
                 self.ftpsensorconfig = {}
@@ -514,7 +514,7 @@ if __name__ == "__main__":
 
                 # Save to file
                 try:
-                    with open(f'{workingdir}\\Assets\\ftpsensorconf.json', "w") as write_file:
+                    with open(f'{workingdir}/Assets/ftpsensorconf.json', "w") as write_file:
                         json.dump(self.ftpinfo, write_file)
                 except:
                     pass
@@ -543,7 +543,7 @@ if __name__ == "__main__":
                     enclist = str(ftpList)
                     enclist = self.fernet.encrypt(enclist.encode()).decode()
                     try:
-                        with open(f'{workingdir}\\Assets\\FTPCred.json', "w") as write_file:
+                        with open(f'{workingdir}/Assets/FTPCred.json', "w") as write_file:
                             json.dump(enclist, write_file)
                     except:
                         pass
@@ -551,7 +551,7 @@ if __name__ == "__main__":
                     # Decode key and save to file
                     self.key = self.key.decode()
                     try:
-                        with open(f'{workingdir}\\Assets\\key.json', "w") as write_file:
+                        with open(f'{workingdir}/Assets/key.json', "w") as write_file:
                             json.dump(self.key, write_file)
                     except:
                         pass
@@ -567,7 +567,7 @@ if __name__ == "__main__":
 
                     # Open new window
                     FTPErrorwin = Toplevel(configFTPwin)
-                    #FTPErrorwin.iconbitmap(f'{workingdir}\\icon.ico')
+                    #FTPErrorwin.iconbitmap(f'{workingdir}/icon.ico')
                     FTPErrorwin.title("Error")
                     FTPErrorwin.geometry('150x100')
 
@@ -616,7 +616,7 @@ if __name__ == "__main__":
 
             # Open new window
             configFTPwin = Toplevel(self.win)
-            #configFTPwin.iconbitmap(f'{workingdir}\\icon.ico')
+            #configFTPwin.iconbitmap(f'{workingdir}/icon.ico')
             configFTPwin.title("Configure FTP settings")
             configFTPwin.geometry('625x700')
 
@@ -774,7 +774,7 @@ if __name__ == "__main__":
         def ChangeBackground(self):
 
             # Open file explorer
-            tempimagefilename = filedialog.askopenfilename(initialdir=f'{home_directory}\\Pictures', title="Select a File", filetypes=(("Image Files", "*.jpg *.png *.gif"), ("all files", "*.*")))
+            tempimagefilename = filedialog.askopenfilename(initialdir=f'{home_directory}/Pictures', title="Select a File", filetypes=(("Image Files", "*.jpg *.png *.gif"), ("all files", "*.*")))
 
             # If an image was not selected, don't update the file name
             if not tempimagefilename:
@@ -784,7 +784,7 @@ if __name__ == "__main__":
 
             # Save image path to file for reference later
             try:
-                with open(f'{workingdir}\\Assets\\backgroundconf.json', "w") as write_file:
+                with open(f'{workingdir}/Assets/backgroundconf.json', "w") as write_file:
                     json.dump(self.imagefilename, write_file)
             except:
                 pass
@@ -803,7 +803,7 @@ if __name__ == "__main__":
 
             # Open new window
             changesensorwin = Toplevel(self.win)
-            #changesensorwin.iconbitmap(f'{workingdir}\\icon.ico')
+            #changesensorwin.iconbitmap(f'{workingdir}/icon.ico')
             changesensorwin.title("Select Sensor Data to Display")
             changesensorwin.geometry('570x445')
 
@@ -867,7 +867,7 @@ if __name__ == "__main__":
 
                 # Save to file
                 try:
-                    with open (f'{workingdir}\\Assets\\sensorpollconf.json', "w") as write_file:
+                    with open (f'{workingdir}/Assets/sensorpollconf.json', "w") as write_file:
                         json.dump(self.sensorpollinfo, write_file)
                 except:
                     pass
@@ -1029,7 +1029,7 @@ if __name__ == "__main__":
 
             # Save dictionary to file
             try:
-                with open(f'{workingdir}\\Assets\\textlabelconf.json', "w") as write_file:
+                with open(f'{workingdir}/Assets/textlabelconf.json', "w") as write_file:
                     json.dump(self.labelinfo, write_file)
             except:
                 pass
@@ -1048,7 +1048,7 @@ if __name__ == "__main__":
 
             # Save empty dictionary to file
             try:
-                with open(f'{workingdir}\\Assets\\textlabelconf.json', "w") as write_file:
+                with open(f'{workingdir}/Assets/textlabelconf.json', "w") as write_file:
                     json.dump(self.labelinfo, write_file)
             except:
                 pass
@@ -1074,11 +1074,11 @@ if __name__ == "__main__":
 
                 # Read text file
                 try:
-                    with open(f'{workingdir}\\Assets\\textlabelconf.json', "r") as read_file:
+                    with open(f'{workingdir}/Assets/textlabelconf.json', "r") as read_file:
                         self.labelinfo = json.load(read_file)
                 except:
                     self.labelinfo = {}
-                    with open(f'{workingdir}\\Assets\\textlabelconf.json', 'w') as write_file:
+                    with open(f'{workingdir}/Assets/textlabelconf.json', 'w') as write_file:
                         json.dump(self.labelinfo, write_file)
 
                 # If the selected item matches, delete it from the dictionary
@@ -1089,7 +1089,7 @@ if __name__ == "__main__":
 
                 # Save the dictionary to file
                 try:
-                    with open(f'{workingdir}\\Assets\\textlabelconf.json', "w") as write_file:
+                    with open(f'{workingdir}/Assets/textlabelconf.json', "w") as write_file:
                         json.dump(self.labelinfo, write_file)
                 except:
                     pass
@@ -1116,12 +1116,12 @@ if __name__ == "__main__":
 
                 # Open label config file
                 try:
-                    with open(f'{workingdir}\\Assets\\textlabelconf.json', "r") as read_file:
+                    with open(f'{workingdir}/Assets/textlabelconf.json', "r") as read_file:
                         self.labelinfo = json.load(read_file)
                 except:
                     self.labelinfo = {}
                     # Save dictionary to file
-                    with open(f'{workingdir}\\Assets\\textlabelconf.json', "w") as write_file:
+                    with open(f'{workingdir}/Assets/textlabelconf.json', "w") as write_file:
                         json.dump(self.labelinfo, write_file)
 
                 # Iterate through dictionary
@@ -1135,7 +1135,7 @@ if __name__ == "__main__":
 
                 # Save dictionary to file
                 try:
-                    with open(f'{workingdir}\\Assets\\textlabelconf.json', "w") as write_file:
+                    with open(f'{workingdir}/Assets/textlabelconf.json', "w") as write_file:
                         json.dump(self.labelinfo, write_file)
                 except:
                     pass
@@ -1166,11 +1166,11 @@ if __name__ == "__main__":
 
             # Open file
             try:
-                with open(f'{workingdir}\\Assets\\textlabelconf.json', "r") as read_file:
+                with open(f'{workingdir}/Assets/textlabelconf.json', "r") as read_file:
                     self.templabelconf = json.load(read_file)
             except:
                 self.templabelconf = {}
-                with open(f'{workingdir}\\Assets\\textlabelconf.json', "w") as write_file:
+                with open(f'{workingdir}/Assets/textlabelconf.json', "w") as write_file:
                     json.dump(self.templabelconf, write_file)
 
             for key, value in self.templabelconf.items():
@@ -1179,7 +1179,7 @@ if __name__ == "__main__":
 
             # Open new window
             changelabelwin = Toplevel(self.win)
-            #changelabelwin.iconbitmap(f'{workingdir}\\icon.ico')
+            #changelabelwin.iconbitmap(f'{workingdir}/icon.ico')
             changelabelwin.title("Modify Text Properties")
             changelabelwin.geometry('335x265')
 
@@ -1281,11 +1281,11 @@ if __name__ == "__main__":
 
                 # Read text file
                 try:
-                    with open(f'{workingdir}\\Assets\\sensorpollconf.json', "r") as read_file:
+                    with open(f'{workingdir}/Assets/sensorpollconf.json', "r") as read_file:
                         self.sensorpollinfo = json.load(read_file)
                 except:
                     self.sensorpollinfo = {}
-                    with open(f'{workingdir}\\Assets\\sensorpollconf.json', "w") as write_file:
+                    with open(f'{workingdir}/Assets/sensorpollconf.json', "w") as write_file:
                         json.dump(self.sensorpollinfo, write_file)
 
                 # Iterate through dictionary
@@ -1299,7 +1299,7 @@ if __name__ == "__main__":
 
                 # Save the dictionary to file
                 try:
-                    with open(f'{workingdir}\\Assets\\sensorpollconf.json', "w") as write_file:
+                    with open(f'{workingdir}/Assets/sensorpollconf.json', "w") as write_file:
                         json.dump(self.sensorpollinfo, write_file)
                 except:
                     pass
@@ -1340,17 +1340,17 @@ if __name__ == "__main__":
 
             # Open new window
             changefontwin = Toplevel(self.win)
-            #changefontwin.iconbitmap(f'{workingdir}\\icon.ico')
+            #changefontwin.iconbitmap(f'{workingdir}/icon.ico')
             changefontwin.title("Modify Text Properties")
             changefontwin.geometry('285x150')
 
             # Open file
             try:
-                with open(f'{workingdir}\\Assets\\sensorpollconf.json', "r") as read_file:
+                with open(f'{workingdir}/Assets/sensorpollconf.json', "r") as read_file:
                     self.tempsensorconf = json.load(read_file)
             except:
                 self.tempsensorconf = {}
-                with open(f'{workingdir}\\Assets\\sensorpollconf.json', "w") as write_file:
+                with open(f'{workingdir}/Assets/sensorpollconf.json', "w") as write_file:
                     json.dump(self.tempsensorconf, write_file)
 
             sensorselect = 0
@@ -1363,7 +1363,7 @@ if __name__ == "__main__":
             if sensorselect == 0:
                 changefontwin.destroy()
                 destroylabelwin = Toplevel(self.win)
-                #destroylabelwin.iconbitmap(f'{workingdir}\\icon.ico')
+                #destroylabelwin.iconbitmap(f'{workingdir}/icon.ico')
                 destroylabelwin.title("Remove Temporary Label")
                 destroylabelwin.geometry('150x100')
                 destroy_button = Button(destroylabelwin, text="Delete", command=destroytemplabel)
@@ -1531,11 +1531,11 @@ if __name__ == "__main__":
 
             # Read file
             try:
-                with open(f'{workingdir}\\Assets\\textlabelconf.json', "r") as read_file:
+                with open(f'{workingdir}/Assets/textlabelconf.json', "r") as read_file:
                     self.labelinfo = json.load(read_file)
             except:
                 self.labelinfo = {}
-                with open(f'{workingdir}\\Assets\\textlabelconf.json', "w") as write_file:
+                with open(f'{workingdir}/Assets/textlabelconf.json', "w") as write_file:
                     json.dump(self.labelinfo, write_file)
 
             # Iterate through dictionary, spawning label items
@@ -1604,7 +1604,7 @@ if __name__ == "__main__":
 
             # Save to file
             try:
-                with open(f'{workingdir}\\Assets\\FTPData.json', "w") as write_file:
+                with open(f'{workingdir}/Assets/FTPData.json', "w") as write_file:
                     json.dump(self.dataDict, write_file)
             except:
                 pass
@@ -1620,20 +1620,20 @@ if __name__ == "__main__":
 
             # Read file
             try:
-                with open(f'{workingdir}\\Assets\\sensorpollconf.json', "r") as read_file:
+                with open(f'{workingdir}/Assets/sensorpollconf.json', "r") as read_file:
                     self.sensorpollinfo = json.load(read_file)
             except:
                 self.sensorpollinfo = {}
-                with open(f'{workingdir}\\Assets\\sensorpollconf.json', "w") as write_file:
+                with open(f'{workingdir}/Assets/sensorpollconf.json', "w") as write_file:
                     json.dump(self.sensorpollinfo, write_file)
 
             # Read file
             try:
-                with open(f'{workingdir}\\Assets\\textlabelconf.json', "r") as read_file:
+                with open(f'{workingdir}/Assets/textlabelconf.json', "r") as read_file:
                     self.labelinfo = json.load(read_file)
             except:
                 self.labelinfo = {}
-                with open(f'{workingdir}\\Assets\\textlabelconf.json', "w") as write_file:
+                with open(f'{workingdir}/Assets/textlabelconf.json', "w") as write_file:
                     json.dump(self.labelinfo, write_file)
 
             # Iterate through dictionary
@@ -1661,14 +1661,14 @@ if __name__ == "__main__":
 
             # Save to file
             try:
-                with open(f'{workingdir}\\Assets\\sensorpollconf.json', "w") as write_file:
+                with open(f'{workingdir}/Assets/sensorpollconf.json', "w") as write_file:
                     json.dump(self.sensorpollinfo, write_file)
             except:
                 pass
 
             # Save to file
             try:
-                with open(f'{workingdir}\\Assets\\textlabelconf.json', "w") as write_file:
+                with open(f'{workingdir}/Assets/textlabelconf.json', "w") as write_file:
                     json.dump(self.labelinfo, write_file)
             except:
                 pass
@@ -1713,7 +1713,7 @@ if __name__ == "__main__":
     splash_root.geometry(f'{screen_width}x{screen_height}+{screen_centerx}+{screen_centery}')
 
     # Grab splashscreen image file and resize
-    image = Image.open(f'{workingdir}\\logo.png')
+    image = Image.open(f'{workingdir}/logo.png')
     resized = image.resize((screen_width, screen_height))
     image2 = ImageTk.PhotoImage(resized)
 

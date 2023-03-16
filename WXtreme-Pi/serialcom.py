@@ -72,11 +72,11 @@ class SerData:
 
         # Open file
         try:
-            with open(f'{workingdir}\\Assets\\comportconf.json', "r") as read_file:
+            with open(f'{workingdir}/Assets/comportconf.json', "r") as read_file:
                 self.COMPort = json.load(read_file)
         except:
             self.COMPort = "COM3"
-            with open(f'{workingdir}\\Assets\\comportconf.json', "w") as write_file:
+            with open(f'{workingdir}/Assets/comportconf.json', "w") as write_file:
                 json.dump(self.COMPort, write_file)
 
         # Call openSerial
@@ -107,7 +107,7 @@ class SerData:
 
             # Save COM port settings to file
             def saveandexit():
-                with open(f'{workingdir}\\Assets\\comportconf.json', "w") as write_file:
+                with open(f'{workingdir}/Assets/comportconf.json', "w") as write_file:
                     json.dump(self.COMPort, write_file)
 
                 # Destroy sub-window
@@ -122,7 +122,7 @@ class SerData:
             # Create window
             comwin = Tk()
             comwin.geometry("250x150")
-            #comwin.iconbitmap(f'{workingdir}\\icon.ico')
+            #comwin.iconbitmap(f'{workingdir}/icon.ico')
             comwin.title("Enter COM port settings")
 
             comwin.protocol("WM_DELETE_WINDOW", exitprogram)
