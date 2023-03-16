@@ -219,6 +219,7 @@ if __name__ == "__main__":
             self.FTPProcess = Process(target=SendFTP, args=(self.ProcessStatus,self.FileAccessStatus,))
             self.FTPProcess.start()
 
+
     # Insert Menu Buttons here
 
         # Exit
@@ -317,25 +318,25 @@ if __name__ == "__main__":
                 except AttributeError:
                     pass
 
-                self.close_GUI()
+                #self.close_GUI()
 
                 self.Process1Status = multiprocessing.Event()
                 self.ProgressProcess = Process(target=ProgressBar, args=(self.Process1Status, ))
                 self.ProgressProcess.start()
 
-                ArcGraph = serialcom.graphArchiveData(GetCurData, startday, startmonth, startyear, starthour,
-                startminute, endday, endmonth, endyear, endhour, endminute)
+                ArcGraph = serialcom.graphArchiveData(GetCurData, startday, startmonth, startyear, starthour, startminute, endday, endmonth, endyear, endhour, endminute)
 
                 ArcGraph.createGraph(arcselect)
 
                 try:
                     self.ProgressProcess.is_alive()
                     self.Process1Status.set()
-                    time.sleep(1) # Pause to let the process kill itself
+                    time.sleep(.25) # Pause to let the process kill itself
                 except AttributeError:
                     pass
 
                 ArcGraph.show_Graph()
+
 
             # Open new window
             creategraphwin = Toplevel(self.win)

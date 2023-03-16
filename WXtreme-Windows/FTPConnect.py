@@ -113,7 +113,7 @@ class SendFTP:
                     ftp.login(self.username, self.password)
 
                     with open(f'{workingdir}\\Assets\\{self.filename}.csv', "rb") as file:
-                        ftp.storbinary(f'STOR WXTremeFTP.csv', file)
+                        ftp.storbinary(f'STOR {self.filename}.csv', file)
                     print('store')
 
                     # Attempts to gracefully terminate FTP connection. If error, connection is forcefully closed and an event is written to the event log

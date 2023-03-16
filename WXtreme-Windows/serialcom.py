@@ -3,13 +3,13 @@ import serial
 import datetime
 import array as arr
 import time
-from tkinter import *
-from tkinter.ttk import *
 import os
 import json
 import matplotlib.pyplot as plt
 import matplotlib
 matplotlib.use('TkAgg')
+from tkinter import *
+from tkinter.ttk import *
 
 from sys import exit
 
@@ -669,6 +669,8 @@ class graphArchiveData(SerData):
 
             else:
                 self.archiveDict.update({Key: datalist})
+
+                return self.archiveDict
 
 
     def ConvertDateTime(self, Time, Date):
