@@ -318,7 +318,7 @@ if __name__ == "__main__":
                 except AttributeError:
                     pass
 
-                #self.close_GUI()
+                self.close_GUI()
 
                 self.Process1Status = multiprocessing.Event()
                 self.ProgressProcess = Process(target=ProgressBar, args=(self.Process1Status, ))
