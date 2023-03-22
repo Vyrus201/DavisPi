@@ -80,17 +80,10 @@ class SerData:
         self.openSerial()
 
     def openSerial(self):
-        # Determine which USB port the station is connected to
-        #sub = "ttyUSB"
-        #usbout = subprocess.Popen("dmesg | grep 'cp210x converter now attached'", stdout=subprocess.PIPE, shell=True)
-        #temp = str(usbout.stdout.read())
-        #index = temp.rindex(sub)
-        #sliced = temp[index:index + 7]
 
-        # Connect to serial interface over the specified USB port
+        # Connect to serial interface over the specified COM port
         try:
             self.ser = serial.Serial(
-            #port=(f'/dev/{sliced}'),
             port=self.COMPort,
             baudrate=19200,
             parity=serial.PARITY_NONE,
@@ -837,6 +830,8 @@ class graphArchiveData(SerData):
             ywinddirhi = []
             yprevwind = []
 
+            rainfallcount = 0
+
             for key, value in self.archiveDict.items():
                 outtemp, outtemphigh, outtemplow, rainfall, intemp, inhum, outhum, avwindspeed, highwindspeed, winddirhi, prevwind = [
                     value[i] for i in (0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10)]
@@ -862,7 +857,14 @@ class graphArchiveData(SerData):
                     youttemplow.append(float('nan'))
                     xouttemplow.append(key)
 
-                yrainfall.append(float(rainfall))
+                if '12:00 AM' in key:
+                    rainfallcount = 0
+
+                if rainfall != 'nan':
+                    rainfallcount = rainfallcount + int(rainfall)
+
+                yrainfall.append(float(rainfallcount)/100)
+
                 xrainfall.append(key)
 
                 if intemp != '3276.7':
