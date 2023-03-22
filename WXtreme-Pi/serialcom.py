@@ -875,7 +875,13 @@ class graphArchiveData(SerData):
                     youttemplow.append(float('nan'))
                     xouttemplow.append(key)
 
-                yrainfall.append(float(rainfall))
+                if '12:00 AM' in key:
+                    rainfallcount = 0
+
+                if rainfall != 'nan':
+                    rainfallcount = rainfallcount + int(rainfall)
+
+                yrainfall.append(float(rainfallcount)/100)
                 xrainfall.append(key)
 
                 if intemp != '3276.7':
