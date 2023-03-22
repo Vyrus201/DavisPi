@@ -679,6 +679,8 @@ class graphArchiveData(SerData):
 
             else:
                 self.archiveDict.update({Key: datalist})
+                
+        return self.archiveDict
 
 
     def ConvertDateTime(self, Time, Date):
