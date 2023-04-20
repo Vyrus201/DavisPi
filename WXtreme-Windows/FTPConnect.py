@@ -105,6 +105,7 @@ class SendFTP:
                         csvfile.write("\n")
                         for i in values:
                             csvfile.write(f'{i},')
+                        csvfile.write('\n')
 
                     ftp = FTP()
 
